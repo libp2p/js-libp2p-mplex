@@ -11,16 +11,10 @@ function create (rawConn, isListener) {
   // Let it flow, let it flooow
   conn.resume()
 
-  conn.on('end', () => {
-    // Cleanup and destroy the connection when it ends
-    // as the converted stream doesn't emit 'close'
-    // but .destroy will trigger a 'close' event.
-    conn.destroy()
-  })
+  const mpx = multiplex()
+  conn.pipe(mpx).pipe(conn)
 
-  const muxer = multiplex()
-
-  return new Muxer(conn, muxer, isListener)
+  return new Muxer(rawConn, mpx, isListener)
 }
 
 exports = module.exports = create

@@ -7,7 +7,7 @@ const pull = require('pull-stream')
 
 const multiplex = require('../src')
 
-describe.only('multiplex-generic', () => {
+describe('multiplex-generic', () => {
   let listenerSocket
   let dialerSocket
 
@@ -41,7 +41,7 @@ describe.only('multiplex-generic', () => {
       conn,
       pull.collect((err, res) => {
         expect(err).to.not.exist
-        expect(res).to.be.eql([Buffer('hello')])
+        expect(res).to.be.eql([new Buffer('hello')])
         done()
       })
     )
@@ -58,7 +58,7 @@ describe.only('multiplex-generic', () => {
       conn,
       pull.collect((err, res) => {
         expect(err).to.not.exist
-        expect(res).to.be.eql([Buffer('hello')])
+        expect(res).to.be.eql([new Buffer('hello')])
         done()
       })
     )
