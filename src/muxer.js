@@ -12,7 +12,6 @@ module.exports = class MultiplexMuxer extends EventEmitter {
   constructor (conn, multiplex, isListener) {
     super()
 
-    this._id = 1
     this.multiplex = multiplex
     this.conn = conn
     this.multicodec = MULTIPLEX_CODEC
@@ -26,9 +25,9 @@ module.exports = class MultiplexMuxer extends EventEmitter {
       this.emit('error', err)
     })
 
-    multiplex.on('stream', (stream, id) => {
+    multiplex.on('stream', (stream) => {
       const muxedConn = new Connection(
-        catchError(toPull.duplex(stream)),
+        stream,
         this.conn
       )
       this.emit('stream', muxedConn)
@@ -40,14 +39,10 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     if (!callback) {
       callback = noop
     }
-    this._id = this._id + (this.isListener ? 2 : 1)
 
-    const stream = this.multiplex.createStream(this._id)
+    const stream = this.multiplex.createStream()
 
-    const conn = new Connection(
-      catchError(toPull.duplex(stream)),
-      this.conn
-    )
+    const conn = new Connection(stream, this.conn)
 
     setTimeout(() => {
       callback(null, conn)
@@ -63,19 +58,3 @@ module.exports = class MultiplexMuxer extends EventEmitter {
 }
 
 function noop () {}
-
-function catchError (stream) {
-  return {
-    source: pull(
-      stream.source,
-      pullCatch((err) => {
-        if (err.message === 'Channel destroyed') {
-          return
-        }
-        // pass error through
-        return true
-      })
-    ),
-    sink: stream.sink
-  }
-}

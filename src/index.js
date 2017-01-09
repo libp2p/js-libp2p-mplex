@@ -1,20 +1,17 @@
 'use strict'
 
-const multiplex = require('multiplex')
+const Multiplex = require('./multiplex')
 const toStream = require('pull-stream-to-stream')
+const pull = require('pull-stream')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 const Muxer = require('./muxer')
 
-function create (rawConn, isListener) {
-  const conn = toStream(rawConn)
-  // Let it flow, let it flooow
-  conn.resume()
+function create (conn, isListener) {
+  const mpx = new Multiplex()
+  pull(conn, mpx, conn)
 
-  const mpx = multiplex()
-  conn.pipe(mpx).pipe(conn)
-
-  return new Muxer(rawConn, mpx, isListener)
+  return new Muxer(conn, mpx, isListener)
 }
 
 exports = module.exports = create
