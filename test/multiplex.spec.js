@@ -7,7 +7,7 @@ const pull = require('pull-stream')
 
 const multiplex = require('../src')
 
-describe.only('multiplex-generic', () => {
+describe('multiplex-generic', () => {
   let listenerSocket
   let dialerSocket
 

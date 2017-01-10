@@ -2,9 +2,6 @@
 
 const EventEmitter = require('events').EventEmitter
 const Connection = require('interface-connection').Connection
-const toPull = require('stream-to-pull-stream')
-const pull = require('pull-stream')
-const pullCatch = require('pull-catch')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 
@@ -16,6 +13,7 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     this.conn = conn
     this.multicodec = MULTIPLEX_CODEC
     this.isListener = isListener
+    this._id = 0
 
     multiplex.on('close', () => {
       this.emit('close')
@@ -26,10 +24,7 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     })
 
     multiplex.on('stream', (stream) => {
-      const muxedConn = new Connection(
-        stream,
-        this.conn
-      )
+      const muxedConn = new Connection(stream, this.conn)
       this.emit('stream', muxedConn)
     })
   }
@@ -40,7 +35,14 @@ module.exports = class MultiplexMuxer extends EventEmitter {
       callback = noop
     }
 
-    const stream = this.multiplex.createStream()
+    let id = this._id
+
+    if (this.isListener) {
+      id++
+    }
+
+    const stream = this.multiplex.createStream(id)
+    this._id += 2
 
     const conn = new Connection(stream, this.conn)
 
@@ -51,9 +53,8 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     return conn
   }
 
-  end (cb) {
-    this.multiplex.once('close', cb)
-    this.multiplex.destroy()
+  end (callback) {
+    this.multiplex.destroy(callback)
   }
 }
 

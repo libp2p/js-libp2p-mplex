@@ -1,7 +1,7 @@
+/* eslint-env mocha */
 'use strict'
 
 const expect = require('chai').expect
-
 
 function mapSeries (list, func) {
   const res = []
@@ -18,7 +18,7 @@ function mapSeries (list, func) {
   })
 }
 
-describe.only('map', () => {
+describe('map', () => {
   it('maps', () => {
     const hashes = [
       'hash1',

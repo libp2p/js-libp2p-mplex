@@ -1,11 +1,10 @@
 'use strict'
 
-const Multiplex = require('./multiplex')
-const toStream = require('pull-stream-to-stream')
 const pull = require('pull-stream')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 const Muxer = require('./muxer')
+const Multiplex = require('./multiplex')
 
 function create (conn, isListener) {
   const mpx = new Multiplex()

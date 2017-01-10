@@ -4,17 +4,18 @@ const debug = require('debug')
 const log = debug('multiplex')
 log.error = debug('multiplex:error')
 
-const varint = require('varint')
 const lp = require('pull-length-prefixed')
 const batch = require('pull-batch')
+const pullCatch = require('pull-catch')
 const pull = require('pull-stream')
 const many = require('pull-many')
-const pushable = require('pull-pushable')
 const abortable = require('pull-abortable')
 const EventEmitter = require('events').EventEmitter
-const toObject = require('pull-stream-function-to-object')
+const pair = require('pull-pair')
 
+const pullEnd = require('./pull-end')
 const pullSwitch = require('./pull-switch')
+const utils = require('./utils')
 
 const SIGNAL_FLUSH = new Buffer([0])
 
@@ -23,78 +24,113 @@ function InChannel (id, name) {
     name = id.toString()
   }
 
-  const initiator = false
-  const header = id << 3 | (initiator ? 2 : 1)
-  let open = false
-
+  const p = pair()
   const aborter = abortable()
 
-  return pull(
-    pull.map((input) => {
-      const header = input[0]
-      const data = input[1]
+  return {
+    abort: aborter.abort.bind(aborter),
+    p: p,
+    source: pull(
+      p.source,
+      aborter,
+      pull.map((input) => {
+        const header = utils.readHeader(input[0])
+        const data = input[1]
 
-      const type = header & 7
-      const channel = header >> 3
-      const isLocal = type & 1
-      log('in', {header, data, type, channel, isLocal, id})
-      switch (type) {
-      case 0: // open
-        return pull.empty()
-      case 1: // local packet
-      case 2: // remote packet
-        return pull.values([data])
-      case 3: // local end
-      case 4: // remote end
-        aborter.abort()
-        return pull.empty()
-      case 5: // local error
-      case 6: // remote error
-        const msg = data.toString || 'Channel destroyed'
-        aborter.abort(new Error(msg))
-        return pull.empty()
-      default:
-        return pull.empty()
-      }
-    }),
-    pull.flatten(),
-    aborter
-  )
+        const flag = header.flag
+        const remoteId = header.id
+        const isLocal = flag & 1
+        log('in', {header, data, flag, id, isLocal, remoteId})
+        switch (flag) {
+          case 0: // open
+            return pull.empty()
+          case 1: // local packet
+          case 2: // remote packet
+            return pull.values([data])
+          case 3: // local end
+          case 4: // remote end
+            return pull.empty()
+          case 5: // local error
+          case 6: // remote error
+            return pull.error(
+              new Error(data.toString() || 'Channel destroyed')
+            )
+          default:
+            return pull.empty()
+        }
+      }),
+      pull.flatten()
+    )
+  }
 }
 
-function OutChannel (id, name) {
+function OutChannel (id, name, open) {
   if (name == null) {
     name = id.toString()
   }
 
-  const initiator = true
-  const header = id << 3 | (initiator ? 2 : 1)
-  let open = false
+  let flag = 2
+  open = false
+  const p = pair()
 
-  const wrap = (data) => [header, data]
+  const wrap = (data) => {
+    // TODO: assert data < 1MB
+    return [
+      utils.createHeader(id, flag),
+      Buffer.isBuffer(data) ? data : new Buffer(data)
+    ]
+  }
 
   return {
+    p: p,
     sink: pull(
+      pullEnd(() => {
+        log('local end', id)
+        flag = 3
+        return SIGNAL_FLUSH
+      }),
+      pullCatch((err) => {
+        log('local error', id, err.message)
+        flag = 5
+        return SIGNAL_FLUSH
+      }),
       pull.map((data) => {
-        log('out', {header, data, open, id})
+        log('out', {data, open, id})
         if (!open) {
           open = true
           return pull.values([
-            id << 3 | 0,
+            utils.createHeader(id, 0),
             Buffer.isBuffer(name) ? name : new Buffer(name)
           ].concat(wrap(data)))
         }
 
         return pull.values(wrap(data))
       }),
-      pull.flatten()
-    ),
-    source: new InChannel(id, name)
+      pull.flatten(),
+      pull.through((d) => log('out', d)),
+      p.sink
+    )
+  }
+}
+
+class Channel {
+  constructor (id, name, open) {
+    this.id = id
+    this.name = name == null ? id.toString() : name
+
+    log('new channel', {id, name})
+
+    this.outChan = new OutChannel(id, name, open)
+    this.sink = this.outChan.sink
+
+    this.inChan = new InChannel(id, name)
+    this.source = pull(this.inChan.source, pull.through((d) => log('in out', d)))
   }
 }
 
 class Multiplex extends EventEmitter {
   constructor (opts) {
+    log('multiplex create')
     super()
     opts = opts || {}
 
@@ -104,45 +140,69 @@ class Multiplex extends EventEmitter {
 
     this._streams = {}
 
-    this._sink = pull(
+    // TODO: only encode/decode data chunks, not headers
+    this.sink = pull(
       lp.decode(),
+      pull.through((d) => log('incoming', d)),
       batch(2),
+      pullEnd(() => {
+        this.emit('close')
+      }),
       pullSwitch(this._split.bind(this))
     )
 
     this._many = many()
-    this._source = pull(
+    this.source = pull(
       this._many,
       lp.encode()
     )
   }
 
   _split (input) {
-    const header = input[0]
+    const header = utils.readHeader(input[0])
     const data = input[1]
 
-    const id = header >> 3
-    const type = header & 7
+    const id = header.id
+    const flag = header.flag
 
-    log('split', {header, data, type, id})
+    log('split', {header, data, flag, id})
     // open
-    if (type === 0) {
-      this._streams[id] = new InChannel(id, data.toString())
-      this.emit('stream', this._streams[id], id)
-      return this._streams[id]
+    if (flag === 0) {
+      log('opening', id)
+      let channel = this._streams[id]
+      if (!channel) {
+        log('no channel', id)
+        channel = new Channel(id, null, true)
+        this._streams[id] = channel
+        this._many.add(channel.outChan.p.source)
+      }
+
+      this.emit('stream', channel, id)
+
+      return channel.inChan.p.sink
     }
 
     // close or error
-    if ([3, 4, 5, 6].indexOf(type) > -1) {
+    if ([3, 4, 5, 6].indexOf(flag) > -1) {
       const c = this._streams[id]
       this._streams[id] = null
 
-      const msg = data.toString || 'Channel destroyed'
-      this.emit('error', new Error(msg))
-      return c
+      // error
+      if (flag > 4) {
+        const msg = data.toString() || 'Channel destroyed'
+        const err = new Error(msg)
+
+        c.inChan.abort(err)
+        this.emit('error', err)
+      } else {
+        // end
+        c.inChan.abort()
+      }
+
+      return
     }
 
-    return this._streams[id]
+    return this._streams[id].inChan.p.sink
   }
 
   _nextId (initiator) {
@@ -156,23 +216,27 @@ class Multiplex extends EventEmitter {
     return id
   }
 
-  createStream (name, opts) {
-    const id = this._nextId(true)
-    const channel = new OutChannel(id, name)
+  createStream (id, name, opts) {
+    id = id == null ? this._nextId(true) : id
+    log('create stream', {id, name})
+
+    const channel = new Channel(id, name)
 
     this._streams[id] = channel
-    this._many.add(channel.source)
+    this._many.add(channel.outChan.p.source)
 
     return channel
   }
 
-  get source () {
-    return this._source
-  }
+  destroy (callback) {
+    if (callback) {
+      this.on('close', callback)
+    }
 
-  get sink () {
-    return this._sink
+    // TODO: How to do this best?
+    // this._streams.forEach((s) => s.close())
   }
 }
 
 module.exports = Multiplex
+exports.Channel = Channel

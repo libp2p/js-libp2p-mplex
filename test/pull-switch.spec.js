@@ -82,4 +82,37 @@ describe('pull-switch', () => {
       })
     )
   })
+
+  it('handles early close of individual sinks', (done) => {
+    const check = makeCheck(3, done)
+
+    const sinks = [
+      pull(
+        pull.take(1),
+        pull.collect((err, vals) => {
+          expect(err).to.not.exist
+          expect(vals).to.be.eql([3])
+          check()
+        })
+      ),
+      pull.collect((err, vals) => {
+        expect(err).to.not.exist
+        expect(vals).to.be.eql([1, 4, 7])
+        check()
+      }),
+      pull.collect((err, vals) => {
+        expect(err).to.not.exist
+        expect(vals).to.be.eql([2, 5, 8])
+        check()
+      })
+    ]
+
+    pull(
+      pull.values([1, 2, 3, 4, 5, 7, 8]),
+      pullSwitch((data) => {
+        const i = data % 3
+        return sinks[i]
+      })
+    )
+  })
 })

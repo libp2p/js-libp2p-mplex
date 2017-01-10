@@ -1,8 +1,6 @@
 'use strict'
 
 const pull = require('pull-stream')
-const peek = require('pull-peek')
-const pushable = require('pull-pushable')
 
 module.exports = function pullSwitch (switcher) {
   let ended = false
@@ -42,8 +40,12 @@ module.exports = function pullSwitch (switcher) {
 
             if (abort) {
               // dead, remove
-              sinks = sinks.slice(0, index).concat(sinks.slice(index + 1))
-              return cb(abort)
+              sinks = sinks
+                .slice(0, index)
+                .concat(sinks.slice(index + 1))
+              cb(abort)
+              read(ended, next)
+              return
             }
 
             cbs[index] = cb
