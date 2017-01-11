@@ -4,7 +4,7 @@
 const tests = require('interface-stream-muxer')
 const multiplex = require('../src')
 
-describe.skip('compliance', () => {
+describe('compliance', () => {
   tests({
     setup (cb) {
       cb(null, multiplex)

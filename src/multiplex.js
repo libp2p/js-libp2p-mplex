@@ -8,10 +8,11 @@ const lp = require('pull-length-prefixed')
 const batch = require('pull-batch')
 const pullCatch = require('pull-catch')
 const pull = require('pull-stream')
-const many = require('pull-many')
 const abortable = require('pull-abortable')
 const EventEmitter = require('events').EventEmitter
 const pair = require('pull-pair')
+const many = require('pull-many')
+// const pullWindow = require('pull-window')
 
 const pullEnd = require('./pull-end')
 const pullSwitch = require('./pull-switch')
@@ -33,7 +34,7 @@ function InChannel (id, name) {
     source: pull(
       p.source,
       aborter,
-      pull.map((input) => {
+      pull.asyncMap((input, cb) => {
         const header = utils.readHeader(input[0])
         const data = input[1]
 
@@ -41,25 +42,26 @@ function InChannel (id, name) {
         const remoteId = header.id
         const isLocal = flag & 1
         log('in', {header, data, flag, id, isLocal, remoteId})
+
         switch (flag) {
           case 0: // open
-            return pull.empty()
+            return cb()
           case 1: // local packet
           case 2: // remote packet
-            return pull.values([data])
+            return cb(null, data)
           case 3: // local end
           case 4: // remote end
-            return pull.empty()
+            return
           case 5: // local error
           case 6: // remote error
-            return pull.error(
+            return cb(
               new Error(data.toString() || 'Channel destroyed')
             )
           default:
-            return pull.empty()
+            return cb()
         }
       }),
-      pull.flatten()
+      pull.filter(Boolean)
     )
   }
 }
@@ -95,7 +97,6 @@ function OutChannel (id, name, open) {
         return SIGNAL_FLUSH
       }),
       pull.map((data) => {
-        log('out', {data, open, id})
         if (!open) {
           open = true
           return pull.values([
@@ -107,7 +108,6 @@ function OutChannel (id, name, open) {
         return pull.values(wrap(data))
       }),
       pull.flatten(),
-      pull.through((d) => log('out', d)),
       p.sink
     )
   }
@@ -124,7 +124,7 @@ class Channel {
     this.sink = this.outChan.sink
 
     this.inChan = new InChannel(id, name)
-    this.source = pull(this.inChan.source, pull.through((d) => log('in out', d)))
+    this.source = this.inChan.source
   }
 }
 
@@ -143,17 +143,17 @@ class Multiplex extends EventEmitter {
     // TODO: only encode/decode data chunks, not headers
     this.sink = pull(
       lp.decode(),
-      pull.through((d) => log('incoming', d)),
-      batch(2),
       pullEnd(() => {
         this.emit('close')
       }),
+      batch(2),
       pullSwitch(this._split.bind(this))
     )
 
     this._many = many()
     this.source = pull(
       this._many,
+      // pull.flatten(),
       lp.encode()
     )
   }
@@ -168,16 +168,14 @@ class Multiplex extends EventEmitter {
     log('split', {header, data, flag, id})
     // open
     if (flag === 0) {
-      log('opening', id)
+      log('open', id)
       let channel = this._streams[id]
       if (!channel) {
-        log('no channel', id)
         channel = new Channel(id, null, true)
         this._streams[id] = channel
-        this._many.add(channel.outChan.p.source)
+        this._addSource(channel.outChan.p.source)
+        this.emit('stream', channel, id)
       }
-
-      this.emit('stream', channel, id)
 
       return channel.inChan.p.sink
     }
@@ -205,6 +203,13 @@ class Multiplex extends EventEmitter {
     return this._streams[id].inChan.p.sink
   }
 
+  _addSource (source) {
+    this._many.add(source)// pull(
+    //   source,
+    //   pullWindow.recent(1000 * 1000, 50)
+    // ))
+  }
+
   _nextId (initiator) {
     const id = this._localIds
     this._localIds += 2
@@ -223,7 +228,7 @@ class Multiplex extends EventEmitter {
     const channel = new Channel(id, name)
 
     this._streams[id] = channel
-    this._many.add(channel.outChan.p.source)
+    this._addSource(channel.outChan.p.source)
 
     return channel
   }

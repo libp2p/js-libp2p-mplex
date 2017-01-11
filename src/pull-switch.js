@@ -4,33 +4,31 @@ const pull = require('pull-stream')
 
 module.exports = function pullSwitch (switcher) {
   let ended = false
-  let cbs = []
-  let data = []
-  let sinks = []
+  const cbs = new Set()
 
   return (read) => {
     function next (end, input) {
       if (end) {
         ended = end
-        cbs.filter(Boolean).forEach((cb) => cb(end))
-        sinks = []
+        cbs.forEach((cb) => cb(end))
+        cbs.clear()
 
         return
       }
 
       const sink = switcher(input)
-      let index = sinks.indexOf(sink)
+      if (!sink) {
+        return
+      }
 
-      if (index === -1) {
-        sinks.push(sink)
-        index = sinks.length - 1
-        data[index] = input
-
+      if (!sink.pulled) {
+        sink.data = input
+        sink.pulled = true
         pull(
           (abort, cb) => {
-            if (data[index]) {
-              const _data = data[index]
-              data[index] = null
+            if (sink.data != null) {
+              const _data = sink.data
+              sink.data = null
               return cb(null, _data)
             }
 
@@ -39,24 +37,24 @@ module.exports = function pullSwitch (switcher) {
             }
 
             if (abort) {
-              // dead, remove
-              sinks = sinks
-                .slice(0, index)
-                .concat(sinks.slice(index + 1))
               cb(abort)
               read(ended, next)
               return
             }
 
-            cbs[index] = cb
+            cbs.add(cb)
+            sink.cb = cb
             read(ended, next)
           },
           sink
         )
-      } else if (cbs[index]) {
-        cbs[index](null, input)
+      } else if (sink.cb) {
+        const _cb = sink.cb
+        cbs.delete(_cb)
+        sink.cb = null
+        _cb(null, input)
       } else {
-        data[index] = input
+        sink.data = input
       }
     }
 
