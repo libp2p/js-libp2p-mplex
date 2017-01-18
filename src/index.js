@@ -9,13 +9,20 @@ const Muxer = require('./muxer')
 const pump = require('pump')
 
 function create (rawConn, isListener) {
-  const conn = toStream(rawConn)
+  const stream = toStream(rawConn)
   // Let it flow, let it flooow
-  conn.resume()
+  stream.resume()
+
+  stream.on('end', () => {
+    // Cleanup and destroy the connection when it ends
+    // as the converted stream doesn't emit 'close'
+    // but .destroy will trigger a 'close' event.
+    stream.destroy()
+  })
 
   const mpx = multiplex()
-  pump(mpx, conn)
-  pump(conn, mpx)
+  pump(mpx, stream)
+  pump(stream, mpx)
 
   return new Muxer(rawConn, mpx, isListener)
 }

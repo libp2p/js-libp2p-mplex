@@ -12,7 +12,8 @@ module.exports = class MultiplexMuxer extends EventEmitter {
   constructor (conn, multiplex, isListener) {
     super()
 
-    this._id = 1
+    this._id = (isListener ? 0 : -1)
+
     this.multiplex = multiplex
     this.conn = conn
     this.multicodec = MULTIPLEX_CODEC
@@ -27,40 +28,21 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     })
 
     multiplex.on('stream', (stream, id) => {
-      stream.on('error', () => {
-        console.log('stream.on error')
-      })
-      const muxedConn = new Connection(
-        toPull.duplex(stream),
-        // catchError(toPull.duplex(stream)),
-        this.conn
-      )
+      const muxedConn = new Connection(toPull.duplex(stream), this.conn)
       this.emit('stream', muxedConn)
     })
   }
 
   // method added to enable pure stream muxer feeling
   newStream (callback) {
-    if (!callback) {
-      callback = noop
-    }
-    this._id = this._id + (this.isListener ? 2 : 1)
+    callback = callback || noop
+    this._id = this._id + 2
 
     const stream = this.multiplex.createStream(this._id)
 
-    stream.on('error', () => {
-      console.log('stream.on error')
-    })
+    const conn = new Connection(toPull.duplex(stream), this.conn)
 
-    const conn = new Connection(
-      // catchError(toPull.duplex(stream)),
-      toPull.duplex(stream),
-      this.conn
-    )
-
-    setTimeout(() => {
-      callback(null, conn)
-    }, 0)
+    setImmediate(() => callback(null, conn))
 
     return conn
   }
