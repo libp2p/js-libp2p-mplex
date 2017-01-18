@@ -3,8 +3,8 @@
 const EventEmitter = require('events').EventEmitter
 const Connection = require('interface-connection').Connection
 const toPull = require('stream-to-pull-stream')
-const pull = require('pull-stream')
-const pullCatch = require('pull-catch')
+// const pull = require('pull-stream')
+// const pullCatch = require('pull-catch')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 
@@ -27,8 +27,12 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     })
 
     multiplex.on('stream', (stream, id) => {
+      stream.on('error', () => {
+        console.log('stream.on error')
+      })
       const muxedConn = new Connection(
-        catchError(toPull.duplex(stream)),
+        toPull.duplex(stream),
+        // catchError(toPull.duplex(stream)),
         this.conn
       )
       this.emit('stream', muxedConn)
@@ -44,8 +48,13 @@ module.exports = class MultiplexMuxer extends EventEmitter {
 
     const stream = this.multiplex.createStream(this._id)
 
+    stream.on('error', () => {
+      console.log('stream.on error')
+    })
+
     const conn = new Connection(
-      catchError(toPull.duplex(stream)),
+      // catchError(toPull.duplex(stream)),
+      toPull.duplex(stream),
       this.conn
     )
 
@@ -64,18 +73,18 @@ module.exports = class MultiplexMuxer extends EventEmitter {
 
 function noop () {}
 
-function catchError (stream) {
-  return {
-    source: pull(
-      stream.source,
-      pullCatch((err) => {
-        if (err.message === 'Channel destroyed') {
-          return
-        }
-        // pass error through
-        return true
-      })
-    ),
-    sink: stream.sink
-  }
-}
+// function catchError (stream) {
+//   return {
+//     source: pull(
+//       stream.source,
+//       pullCatch((err) => {
+//         if (err.message === 'Channel destroyed') {
+//           return
+//         }
+//         // pass error through
+//         return true
+//       })
+//     ),
+//     sink: stream.sink
+//   }
+// }

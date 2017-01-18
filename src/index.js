@@ -6,13 +6,16 @@ const toStream = require('pull-stream-to-stream')
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 const Muxer = require('./muxer')
 
+const pump = require('pump')
+
 function create (rawConn, isListener) {
   const conn = toStream(rawConn)
   // Let it flow, let it flooow
   conn.resume()
 
   const mpx = multiplex()
-  conn.pipe(mpx).pipe(conn)
+  pump(mpx, conn)
+  pump(conn, mpx)
 
   return new Muxer(rawConn, mpx, isListener)
 }
