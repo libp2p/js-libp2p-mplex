@@ -70,7 +70,7 @@ function catchError (stream) {
         if (err.message === 'Channel destroyed') {
           return
         }
-        return err
+        return false
       })
     ),
     sink: stream.sink
