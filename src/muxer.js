@@ -3,8 +3,8 @@
 const EventEmitter = require('events').EventEmitter
 const Connection = require('interface-connection').Connection
 const toPull = require('stream-to-pull-stream')
-// const pull = require('pull-stream')
-// const pullCatch = require('pull-catch')
+const pull = require('pull-stream')
+const pullCatch = require('pull-catch')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 
@@ -28,7 +28,10 @@ module.exports = class MultiplexMuxer extends EventEmitter {
     })
 
     multiplex.on('stream', (stream, id) => {
-      const muxedConn = new Connection(toPull.duplex(stream), this.conn)
+      const muxedConn = new Connection(
+        catchError(toPull.duplex(stream)),
+        this.conn
+      )
       this.emit('stream', muxedConn)
     })
   }
@@ -40,7 +43,10 @@ module.exports = class MultiplexMuxer extends EventEmitter {
 
     const stream = this.multiplex.createStream(this._id)
 
-    const conn = new Connection(toPull.duplex(stream), this.conn)
+    const conn = new Connection(
+      catchError(toPull.duplex(stream)),
+      this.conn
+    )
 
     setImmediate(() => callback(null, conn))
 
@@ -55,18 +61,18 @@ module.exports = class MultiplexMuxer extends EventEmitter {
 
 function noop () {}
 
-// function catchError (stream) {
-//   return {
-//     source: pull(
-//       stream.source,
-//       pullCatch((err) => {
-//         if (err.message === 'Channel destroyed') {
-//           return
-//         }
-//         // pass error through
-//         return true
-//       })
-//     ),
-//     sink: stream.sink
-//   }
-// }
+// Catch error makes sure that even though we get the "Channel destroyed" error from when closing streams, that it's not leaking through since it's not really an error for us, channels shoul close cleanly.
+function catchError (stream) {
+  return {
+    source: pull(
+      stream.source,
+      pullCatch((err) => {
+        if (err.message === 'Channel destroyed') {
+          return
+        }
+        return err
+      })
+    ),
+    sink: stream.sink
+  }
+}
