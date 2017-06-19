@@ -9,6 +9,11 @@ const setImmediate = require('async/setImmediate')
 
 const MULTIPLEX_CODEC = require('./multiplex-codec')
 
+const OK_ERROR_MESSAGES = [
+  'Channel destroyed',
+  'underlying socket has been closed'
+]
+
 module.exports = class MultiplexMuxer extends EventEmitter {
   constructor (conn, multiplex) {
     super()
@@ -58,7 +63,7 @@ function catchError (stream) {
     source: pull(
       stream.source,
       pullCatch((err) => {
-        if (err.message === 'Channel destroyed') {
+        if (OK_ERROR_MESSAGES.indexOf(err.message) >= 0) {
           return
         }
         return false
