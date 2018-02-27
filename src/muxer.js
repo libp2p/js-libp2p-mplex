@@ -54,7 +54,7 @@ class MultiplexMuxer extends EventEmitter {
     let stream
     try {
       stream = this.multiplex.createStream()
-    } catch(err) {
+    } catch (err) {
       return callback(err)
     }
 
