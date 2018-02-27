@@ -7,6 +7,7 @@ const expect = chai.expect
 chai.use(dirtyChai)
 const pair = require('pull-pair/duplex')
 const pull = require('pull-stream')
+const abortable = require('pull-abortable')
 
 const multiplex = require('../src')
 
@@ -66,5 +67,17 @@ describe('multiplex-generic', () => {
         done()
       })
     )
+  })
+
+  it('handle aborted stream', (done) => {
+    this.timeout(20 * 1000)
+    const aborter = abortable()
+    pull(listenerSocket, aborter)
+
+    aborter.abort()
+    listener.newStream((err) => {
+      expect(err).to.exist()
+      done()
+    })
   })
 })
