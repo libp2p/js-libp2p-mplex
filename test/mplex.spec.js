@@ -70,7 +70,6 @@ describe('multiplex-generic', () => {
   })
 
   it('handle aborted stream', (done) => {
-    this.timeout(20 * 1000)
     const aborter = abortable()
     pull(listenerSocket, aborter)
 
