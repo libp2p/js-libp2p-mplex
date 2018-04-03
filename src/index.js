@@ -2,7 +2,7 @@
 
 const MULTIPLEX_CODEC = require('./codec')
 const pull = require('pull-stream')
-const Mplex = require('mplex')
+const Mplex = require('pull-plex')
 const Muxer = require('./muxer')
 
 function create (conn, isListener) {

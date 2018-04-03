@@ -18,7 +18,10 @@ class MultiplexMuxer extends EventEmitter {
     multiplex.on('close', () => this.emit('close'))
     multiplex.on('error', (err) => this.emit('error', err))
 
-    multiplex.on('stream', (stream) => this.emit('stream', stream))
+    multiplex.on('stream', (stream) => {
+      stream.once('error', (() => {}))
+      this.emit('stream', stream)
+    })
   }
 
   // method added to enable pure stream muxer feeling
@@ -31,13 +34,9 @@ class MultiplexMuxer extends EventEmitter {
       return setImmediate(() => callback(err))
     }
 
-    const conn = new Connection(null, this.conn)
-
-    setImmediate(() => stream.openChan((err) => {
-      conn.setInnerConn(stream)
-      callback(err, conn)
-    }))
-
+    const conn = new Connection(stream, this.conn)
+    stream.openChan()
+    setImmediate(() => callback(null, conn))
     return conn
   }
 
