@@ -20,7 +20,7 @@ class MultiplexMuxer extends EventEmitter {
 
     multiplex.on('stream', (stream) => {
       stream.once('error', (() => {}))
-      this.emit('stream', stream)
+      this.emit('stream', new Connection(stream, this.conn))
     })
   }
 
