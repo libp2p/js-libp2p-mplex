@@ -8,7 +8,9 @@ const Muxer = require('./muxer')
 function create (conn, isListener) {
   const mpx = new Mplex(!isListener)
   pull(conn, mpx, conn)
-  return new Muxer(conn, mpx)
+  const muxer = new Muxer(conn, mpx)
+  muxer.once('error', (() => {})) // log error here
+  return muxer
 }
 
 exports = module.exports = create
