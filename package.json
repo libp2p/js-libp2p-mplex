@@ -44,6 +44,7 @@
     "concat-stream": "^1.6.2",
     "debug": "^3.1.0",
     "duplexify": "^3.5.4",
+    "pull-abortable": "^4.1.1",
     "pull-plex": "~0.0.1",
     "interface-connection": "^0.3.2",
     "pull-catch": "^1.0.0",
