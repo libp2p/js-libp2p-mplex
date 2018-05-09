@@ -44,7 +44,7 @@
     "concat-stream": "^1.6.2",
     "debug": "^3.1.0",
     "pull-abortable": "^4.1.1",
-    "pull-mplex": "~0.0.1",
+    "pull-mplex": "git+ssh://git@github.com:libp2p/pull-mplex.git#feat/pull-mplex",
     "pull-stream": "^3.6.7"
   },
   "contributors": [
