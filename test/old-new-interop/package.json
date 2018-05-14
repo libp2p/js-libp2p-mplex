@@ -1,0 +1,18 @@
+{
+  "name": "old-new-interop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "stream-mplex-interop.spec.js",
+  "scripts": {
+    "test": "aegir test -t node browser -f test/stream-mplex-interop.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "chunky": "0.0.0",
+    "concat-stream": "^1.6.2",
+    "libp2p-mplex": "0.7.0",
+    "pull-stream-to-stream": "^1.3.4",
+    "through2": "^2.0.3"
+  }
+}

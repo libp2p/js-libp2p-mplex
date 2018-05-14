@@ -5,6 +5,7 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
+
 const pair = require('pull-pair/duplex')
 const pull = require('pull-stream')
 
