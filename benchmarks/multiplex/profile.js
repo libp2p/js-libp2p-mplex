@@ -1,58 +1,49 @@
 'use strict'
 
-const pair = require('pull-pair/duplex')
-const pull = require('pull-stream')
-const generate = require('pull-generate')
 const each = require('async/each')
 const eachLimit = require('async/eachLimit')
-const setImmediate = require('async/setImmediate')
 
-const Plex = require('pull-mplex')
+const Plex = require('multiplex')
 
 const spawn = (nStreams, nMsg, done, limit) => {
-  const p = pair()
-
   const check = marker(2 * nStreams, done)
 
   const msg = 'simple msg'
 
-  const listener = new Plex(false)
-  const dialer = new Plex(true)
-
-  pull(dialer, p[0], dialer)
-  pull(listener, p[1], listener)
+  const listener = new Plex()
+  const dialer = new Plex()
 
   listener.on('stream', (stream) => {
-    pull(
-      stream,
-      pull.onEnd((err) => {
-        if (err) { return done(err) }
-        check()
-        pull(pull.empty(), stream)
-      })
-    )
+    stream.once('data', () => {
+      check()
+    })
+
+    stream.once('error', (err) => {
+      done(err)
+    })
   })
 
+  dialer.pipe(listener).pipe(dialer)
+
   const numbers = []
-  for (let i = 0; i < nStreams; i++) {
+  for (let i = 1; i <= nStreams; i++) {
     numbers.push(i)
   }
 
   const spawnStream = (n, cb) => {
     const stream = dialer.createStream()
-    pull(
-      generate(0, (s, cb) => {
-        setImmediate(() => {
-          cb(s === nMsg ? true : null, msg, s + 1)
-        })
-      }),
-      stream,
-      pull.collect((err) => {
-        if (err) { return done(err) }
-        check()
-        cb()
-      })
-    )
+
+    stream.once('error', (err) => {
+      return done(err)
+    })
+
+    for (let i = 0; i <= nMsg; i++) {
+      stream.write(msg + i)
+    }
+
+    check()
+    stream.end()
+    cb()
   }
 
   if (limit) {
@@ -79,7 +70,7 @@ function marker (n, done) {
   }
 }
 
-spawn(1000, 1000, (err) => {
+spawn(1000, 10000, (err) => {
   if (err) {
     throw err
   }

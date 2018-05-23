@@ -7,7 +7,7 @@ const each = require('async/each')
 const eachLimit = require('async/eachLimit')
 const setImmediate = require('async/setImmediate')
 
-const Plex = require('pull-mplex')
+const Plex = require('../../src')
 
 const spawn = (nStreams, nMsg, done, limit) => {
   const p = pair()
@@ -16,11 +16,8 @@ const spawn = (nStreams, nMsg, done, limit) => {
 
   const msg = 'simple msg'
 
-  const listener = new Plex(false)
-  const dialer = new Plex(true)
-
-  pull(dialer, p[0], dialer)
-  pull(listener, p[1], listener)
+  const listener = Plex.dialer(p[0])
+  const dialer = Plex.listener(p[1])
 
   listener.on('stream', (stream) => {
     pull(
@@ -39,7 +36,7 @@ const spawn = (nStreams, nMsg, done, limit) => {
   }
 
   const spawnStream = (n, cb) => {
-    const stream = dialer.createStream()
+    const stream = dialer.newStream()
     pull(
       generate(0, (s, cb) => {
         setImmediate(() => {
