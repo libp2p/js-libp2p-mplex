@@ -36,6 +36,7 @@
     "libp2p-tcp": "^0.12.0",
     "libp2p-websockets": "~0.11.0",
     "pre-commit": "^1.2.2",
+    "pull-abortable": "^4.1.1",
     "pull-pair": "^1.1.0"
   },
   "dependencies": {
