@@ -464,16 +464,10 @@ class Multiplex extends stream.Duplex {
     this._clear()
   }
 
-  destroy (err/* :: ?: Error */) {
+  _destroy (err/* :: ?: Error */, callback) {
     this.log('destroy')
-    if (this.destroyed) {
-      this.log('already destroyed')
-      return
-    }
 
-    var list = this._local.concat(this._remote)
-
-    this.destroyed = true
+    const list = this._local.concat(this._remote)
 
     if (err) {
       this.emit('error', err)
@@ -482,11 +476,12 @@ class Multiplex extends stream.Duplex {
 
     list.forEach(function (stream) {
       if (stream) {
-        stream.emit('error', err || new Error('underlying socket has been closed'))
+        stream.destroy(err)
       }
     })
 
     this._clear()
+    callback()
   }
 }
 
