@@ -86,14 +86,6 @@ class Channel extends stream.Duplex {
     const local = this.local
     this.log('_destroy:' + (local ? 'local' : 'remote'))
 
-    const hasErrorListeners = this.listenerCount('error') > 0
-
-    if (err && (!local || hasErrorListeners)) {
-      this.emit('error', err)
-    }
-
-    this.emit('close')
-
     if (local && this._opened) {
       if (this._lazy && this.initiator) {
         this._open()
@@ -105,11 +97,11 @@ class Channel extends stream.Duplex {
           this.channel << 3 | (this.initiator ? 6 : 5),
           msg
         )
-      } catch (e) {}
+      } catch (e) { /* do nothing */ }
     }
 
     this._finalize()
-    callback()
+    callback(err)
   }
 
   _finalize () {

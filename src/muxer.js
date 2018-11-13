@@ -37,7 +37,9 @@ class MultiplexMuxer extends EventEmitter {
     this.multicodec = MULTIPLEX_CODEC
 
     multiplex.on('close', () => this.emit('close'))
-    multiplex.on('error', (err) => this.emit('error', err))
+    multiplex.on('error', (err) => {
+      this.emit('error', err)
+    })
 
     multiplex.on('stream', (stream, id) => {
       const muxedConn = new Connection(

@@ -31,6 +31,7 @@
   "devDependencies": {
     "aegir": "^15.2.0",
     "chai": "^4.2.0",
+    "chai-checkmark": "^1.0.1",
     "dirty-chai": "^2.0.1",
     "interface-stream-muxer": "~0.5.9",
     "libp2p-tcp": "~0.13.0",

@@ -322,7 +322,7 @@ class Multiplex extends stream.Duplex {
           stream._awaitDrain++
         }
         break
-      default: {}
+      default: // no action
     }
   }
 
@@ -469,19 +469,14 @@ class Multiplex extends stream.Duplex {
 
     const list = this._local.concat(this._remote)
 
-    if (err) {
-      this.emit('error', err)
-    }
-    this.emit('close')
-
     list.forEach(function (stream) {
       if (stream) {
-        stream.destroy(err)
+        stream.destroy(err || new Error('underlying socket has been closed'))
       }
     })
 
     this._clear()
-    callback()
+    callback(err)
   }
 }
 
