@@ -82,6 +82,21 @@ class Channel extends stream.Duplex {
     })
   }
 
+  /**
+   * Conditionally emit errors if we have listeners. All other
+   * events are sent to EventEmitter.emit
+   * @param {string} eventName
+   * @param  {...any} args
+   * @returns {void}
+   */
+  emit (eventName, ...args) {
+    if (eventName === 'error' && !this._events.error) {
+      this.log('error', ...args)
+    } else {
+      super.emit(eventName, ...args)
+    }
+  }
+
   _destroy (err/* : Error */, callback) {
     const local = this.local
     this.log('_destroy:' + (local ? 'local' : 'remote'))

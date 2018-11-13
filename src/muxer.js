@@ -6,6 +6,9 @@ const toPull = require('stream-to-pull-stream')
 const pull = require('pull-stream')
 const pullCatch = require('pull-catch')
 const setImmediate = require('async/setImmediate')
+const debug = require('debug')
+const log = debug('mplex')
+log.error = debug('mplex:error')
 
 const MULTIPLEX_CODEC = require('./codec')
 
@@ -37,9 +40,7 @@ class MultiplexMuxer extends EventEmitter {
     this.multicodec = MULTIPLEX_CODEC
 
     multiplex.on('close', () => this.emit('close'))
-    multiplex.on('error', (err) => {
-      this.emit('error', err)
-    })
+    multiplex.on('error', (err) => this.emit('error', err))
 
     multiplex.on('stream', (stream, id) => {
       const muxedConn = new Connection(
@@ -48,6 +49,22 @@ class MultiplexMuxer extends EventEmitter {
       )
       this.emit('stream', muxedConn)
     })
+  }
+
+  /**
+   * Conditionally emit errors if we have listeners. All other
+   * events are sent to EventEmitter.emit
+   *
+   * @param {string} eventName
+   * @param  {...any} args
+   * @returns {void}
+   */
+  emit (eventName, ...args) {
+    if (eventName === 'error' && !this._events.error) {
+      log.error('error', ...args)
+    } else {
+      super.emit(eventName, ...args)
+    }
   }
 
   // method added to enable pure stream muxer feeling
