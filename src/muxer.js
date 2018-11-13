@@ -68,9 +68,20 @@ class MultiplexMuxer extends EventEmitter {
     return conn
   }
 
-  end (callback) {
+  /**
+   * Destroys multiplex and ends all internal streams
+   *
+   * @param {Error} err Optional error to pass to end the muxer with
+   * @param {function()} callback Optional
+   * @returns {void}
+   */
+  end (err, callback) {
+    if (typeof err === 'function') {
+      callback = err
+      err = null
+    }
     callback = callback || noop
-    this.multiplex.destroy()
+    this.multiplex.destroy(err)
     callback()
   }
 }
