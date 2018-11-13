@@ -28,6 +28,7 @@ class Channel extends stream.Duplex {
     this.halfOpen = halfOpen
     this.destroyed = false
     this.finalized = false
+    this.local = true
 
     this._multiplex = plex
     this._dataHeader = 0
@@ -81,18 +82,9 @@ class Channel extends stream.Duplex {
     })
   }
 
-  destroy (err/* : Error */) {
-    this._destroy(err, true)
-  }
-
-  _destroy (err/* : Error */, local/* : bool */) {
+  _destroy (err/* : Error */, callback) {
+    const local = this.local
     this.log('_destroy:' + (local ? 'local' : 'remote'))
-    if (this.destroyed) {
-      this.log('already destroyed')
-      return
-    }
-
-    this.destroyed = true
 
     const hasErrorListeners = this.listenerCount('error') > 0
 
@@ -117,6 +109,7 @@ class Channel extends stream.Duplex {
     }
 
     this._finalize()
+    callback()
   }
 
   _finalize () {

@@ -304,7 +304,8 @@ class Multiplex extends stream.Duplex {
       case 5: // local error
       case 6: { // remote error
         const error = new Error(data.toString() || 'Channel destroyed')
-        stream._destroy(error, false)
+        stream.local = false
+        stream.destroy(error)
         return
       }
 
@@ -451,7 +452,8 @@ class Multiplex extends stream.Duplex {
 
     list.forEach(function (stream) {
       if (stream) {
-        stream._destroy(null, false)
+        stream.local = false
+        stream.destroy(null)
       }
     })
 
