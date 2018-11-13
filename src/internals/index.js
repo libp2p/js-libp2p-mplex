@@ -471,7 +471,7 @@ class Multiplex extends stream.Duplex {
 
     list.forEach(function (stream) {
       if (stream) {
-        stream.destroy(err || new Error('underlying socket has been closed'))
+        stream.destroy(err || new Error('Channel destroyed'))
       }
     })
 
