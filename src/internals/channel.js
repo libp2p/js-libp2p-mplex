@@ -98,10 +98,9 @@ class Channel extends stream.Duplex {
   }
 
   _destroy (err/* : Error */, callback) {
-    const local = this.local
-    this.log('_destroy:' + (local ? 'local' : 'remote'))
+    this.log('_destroy:' + (this.local ? 'local' : 'remote'))
 
-    if (local && this._opened) {
+    if (this.local && this._opened) {
       if (this._lazy && this.initiator) {
         this._open()
       }
