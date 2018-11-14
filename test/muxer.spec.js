@@ -44,6 +44,14 @@ describe('multiplex-muxer', () => {
     muxer.end(error)
   })
 
+  it('destroying with error does not throw with no listener', () => {
+    const p = pair()
+    const multiplex = new Multiplex()
+    const muxer = new Muxer(p, multiplex)
+    const error = new Error('bad things')
+    expect(() => muxer.end(error)).to.not.throw()
+  })
+
   it('can get destroyed', (done) => {
     expect(multiplex.destroyed).to.eql(false)
 
