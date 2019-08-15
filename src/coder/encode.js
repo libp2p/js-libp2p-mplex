@@ -31,10 +31,6 @@ class Encoder {
 
     if (!msg.data) return [header, empty]
 
-    if (msg.data.shallowSlice) {
-      msg.data = msg.data.slice() // If BufferList, convert to buffer
-    }
-
     return [header, msg.data]
   }
 }

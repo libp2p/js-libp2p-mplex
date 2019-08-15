@@ -38,12 +38,12 @@ describe('coder', () => {
       { id: 21, type: 0, data: Buffer.from('21') }
     ]
 
-    let data = Buffer.alloc(0)
+    const data = new BufferList()
     for await (const chunk of coder.encode(source)) {
-      data = Buffer.concat([data, chunk])
+      data.append(chunk)
     }
 
-    expect(data).to.be.eql(Buffer.from('88010231379801023139a801023231', 'hex'))
+    expect(data.slice()).to.be.eql(Buffer.from('88010231379801023139a801023231', 'hex'))
   })
 
   it('should encode from BufferList', async () => {
@@ -56,12 +56,12 @@ describe('coder', () => {
       ])
     }]
 
-    let data = Buffer.alloc(0)
+    const data = new BufferList()
     for await (const chunk of coder.encode(source)) {
-      data = Buffer.concat([data, chunk])
+      data.append(chunk)
     }
 
-    expect(data).to.be.eql(Buffer.concat([
+    expect(data.slice()).to.be.eql(Buffer.concat([
       Buffer.from('8801', 'hex'),
       Buffer.from([source[0].data.length]),
       source[0].data.slice()
@@ -87,12 +87,12 @@ describe('coder', () => {
   it('should encode zero length body msg', async () => {
     const source = [{ id: 17, type: 0 }]
 
-    let data = Buffer.alloc(0)
+    const data = new BufferList()
     for await (const chunk of coder.encode(source)) {
-      data = Buffer.concat([data, chunk])
+      data.append(chunk)
     }
 
-    expect(data).to.be.eql(Buffer.from('880100', 'hex'))
+    expect(data.slice()).to.be.eql(Buffer.from('880100', 'hex'))
   })
 
   it('should decode zero length body msg', async () => {
