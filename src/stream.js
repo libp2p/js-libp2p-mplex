@@ -1,192 +1,77 @@
 'use strict'
-/* @flow */
 
-const stream = require('readable-stream')
-const debug = require('debug')
+const abortable = require('abortable-iterator')
+const AbortController = require('abort-controller')
+const log = require('debug')('mplex:stream')
+const pushable = require('it-pushable')
+const { InitiatorMessageTypes, ReceiverMessageTypes } = require('./message-types')
 
-/* :: import type Multiplex from './index'
+module.exports = ({ id, name, send, onEnd = (() => {}), type = 'initiator' }) => {
+  const abortController = new AbortController()
+  const resetController = new AbortController()
+  const Types = type === 'initiator' ? InitiatorMessageTypes : ReceiverMessageTypes
 
-export type ChannelOpts = {
-  chunked?: bool,
-  halfOpen?: bool,
-  lazy?: bool
-}
-*/
+  name = String(name == null ? id : name)
 
-class Channel extends stream.Duplex {
-  constructor (name/* : Buffer | string */, plex/* : Multiplex */, opts/* : ChannelOpts = {} */) {
-    const halfOpen = Boolean(opts.halfOpen)
-    super({
-      allowHalfOpen: halfOpen
-    })
+  let sourceEnded = false
+  let sinkEnded = false
+  let endErr
 
-    this.name = name
-    this.log = debug('mplex:channel:' + this.name.toString())
-    this.channel = 0
-    this.initiator = false
-    this.chunked = Boolean(opts.chunked)
-    this.halfOpen = halfOpen
-    this.destroyed = false
-    this.finalized = false
-    this.local = true
-
-    this._multiplex = plex
-    this._dataHeader = 0
-    this._opened = false
-    this._awaitDrain = 0
-    this._lazy = Boolean(opts.lazy)
-
-    let finished = false
-    let ended = false
-    this.log('open, halfOpen: ' + this.halfOpen)
-
-    this.once('end', () => {
-      this.log('end')
-      this._read() // trigger drain
-
-      if (this.destroyed) {
-        return
-      }
-
-      ended = true
-      if (finished) {
-        this._finalize()
-      } else if (!this.halfOpen) {
-        this.end()
-      }
-    })
-
-    this.once('finish', function onfinish () {
-      if (this.destroyed) {
-        return
-      }
-
-      if (!this._opened) {
-        return this.once('open', onfinish)
-      }
-
-      if (this._lazy && this.initiator) {
-        this._open()
-      }
-
-      this._multiplex._send(
-        this.channel << 3 | (this.initiator ? 4 : 3),
-        null
-      )
-
-      finished = true
-
-      if (ended) {
-        this._finalize()
-      }
-    })
+  const onSourceEnd = err => {
+    sourceEnded = true
+    log('%s stream %s source end', type, name, err)
+    if (err && !endErr) endErr = err
+    if (sinkEnded) onEnd(endErr)
   }
 
-  /**
-   * Conditionally emit errors if we have listeners. All other
-   * events are sent to EventEmitter.emit
-   * @param {string} eventName
-   * @param  {...any} args
-   * @returns {void}
-   */
-  emit (eventName, ...args) {
-    if (eventName === 'error' && !this._events.error) {
-      this.log('error', ...args)
-    } else {
-      super.emit(eventName, ...args)
-    }
+  const onSinkEnd = err => {
+    sinkEnded = true
+    log('%s stream %s sink end', type, name, err)
+    if (err && !endErr) endErr = err
+    if (sourceEnded) onEnd(endErr)
   }
 
-  _destroy (err/* : Error */, callback) {
-    this.log('_destroy:' + (this.local ? 'local' : 'remote'))
+  const stream = {
+    // Close for reading
+    close: () => stream.source.end(),
+    // Close for reading and writing (local error)
+    abort: err => {
+      // End the source with the passed error
+      stream.source.end(err)
+      abortController.abort()
+    },
+    // Close immediately for reading and writing (remote error)
+    reset: () => resetController.abort(),
+    sink: async source => {
+      source = abortable(source, abortController.signal, { abortMessage: 'stream aborted', abortCode: 'ERR_MPLEX_STREAM_ABORT' })
+      source = abortable(source, resetController.signal, { abortMessage: 'stream reset', abortCode: 'ERR_MPLEX_STREAM_RESET' })
 
-    if (this.local && this._opened) {
-      if (this._lazy && this.initiator) {
-        this._open()
+      if (type === 'initiator') { // If initiator, open a new stream
+        send({ id, type: Types.NEW_STREAM, data: name })
       }
 
-      const msg = err ? Buffer.from(err.message) : null
       try {
-        this._multiplex._send(
-          this.channel << 3 | (this.initiator ? 6 : 5),
-          msg
-        )
-      } catch (e) { /* do nothing */ }
-    }
+        for await (const data of source) {
+          send({ id, type: Types.MESSAGE, data })
+        }
+      } catch (err) {
+        // Send no more data if this stream was remotely reset
+        if (err.code === 'ERR_MPLEX_STREAM_RESET') {
+          log('%s stream %s reset', type, name)
+        } else {
+          log('%s stream %s error', type, name, err)
+          send({ id, type: Types.RESET })
+        }
 
-    this._finalize()
-    callback(err)
+        stream.source.end(err)
+        return onSinkEnd(err)
+      }
+
+      send({ id, type: Types.CLOSE })
+      onSinkEnd()
+    },
+    source: pushable(onSourceEnd)
   }
 
-  _finalize () {
-    if (this.finalized) {
-      return
-    }
-
-    this.finalized = true
-    this.emit('finalize')
-  }
-
-  _write (data/* : Buffer */, enc/* : string */, cb/* : () => void */) {
-    this.log('write: ', data.length)
-    if (!this._opened) {
-      this.once('open', () => {
-        this._write(data, enc, cb)
-      })
-      return
-    }
-
-    if (this.destroyed) {
-      cb()
-      return
-    }
-
-    if (this._lazy && this.initiator) {
-      this._open()
-    }
-
-    const drained = this._multiplex._send(
-      this._dataHeader,
-      data
-    )
-
-    if (drained) {
-      cb()
-      return
-    }
-
-    this._multiplex._ondrain.push(cb)
-  }
-
-  _read () {
-    if (this._awaitDrain) {
-      const drained = this._awaitDrain
-      this._awaitDrain = 0
-      this._multiplex._onchanneldrain(drained)
-    }
-  }
-
-  _open () {
-    let buf = null
-    if (Buffer.isBuffer(this.name)) {
-      buf = this.name
-    } else if (this.name !== this.channel.toString()) {
-      buf = Buffer.from(this.name)
-    }
-
-    this._lazy = false
-    this._multiplex._send(this.channel << 3 | 0, buf)
-  }
-
-  open (channel/* : number */, initiator/* : bool */) {
-    this.log('open: ' + channel)
-    this.channel = channel
-    this.initiator = initiator
-    this._dataHeader = channel << 3 | (initiator ? 2 : 1)
-    this._opened = true
-    if (!this._lazy && this.initiator) this._open()
-    this.emit('open')
-  }
+  return stream
 }
-
-module.exports = Channel
