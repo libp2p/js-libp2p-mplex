@@ -75,7 +75,7 @@ pipe(conn, muxer, conn) // conn is duplex connection to another peer
         stream,
         source => (async function * () {
           for await (const data of source) yield data
-        })()
+        })(),
         stream
       )
     }
