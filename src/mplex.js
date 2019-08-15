@@ -2,7 +2,7 @@
 
 const pipe = require('it-pipe')
 const pushable = require('it-pushable')
-const log = require('debug')('libp2p:mplex:mplex')
+const log = require('debug')('libp2p:mplex')
 const abortable = require('abortable-iterator')
 const Coder = require('./coder')
 const restrictSize = require('./restrict-size')
