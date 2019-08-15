@@ -33,7 +33,7 @@ describe('restrict-size', () => {
       )
     } catch (err) {
       expect(err.code).to.equal('ERR_MSG_TOO_BIG')
-      expect(output).to.have.length(1)
+      expect(output).to.have.length(2)
       expect(output[0]).to.deep.equal(input[0])
       expect(output[1]).to.deep.equal(input[1])
       return
