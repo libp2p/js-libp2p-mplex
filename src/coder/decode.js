@@ -39,7 +39,7 @@ class Decoder {
 
     const { id, type, length } = this._headerInfo
 
-    if (this._buffer.length < length) return [] // not got enough data yet
+    if (this._buffer.length < length) return [] // not enough data yet
 
     if (this._buffer.length === length) {
       const msg = { id, type, data: this._buffer }
