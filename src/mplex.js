@@ -27,39 +27,32 @@ class Mplex {
   newStream (name) {
     const id = this._streamId++
     name = name == null ? id.toString() : String(name)
-    log('new initiator stream %s %s', id, name)
-    const send = msg => {
-      if (log.enabled) {
-        log('initiator stream send', { id: msg.id, type: MessageTypeNames[msg.type], data: msg.data })
-      }
-      return this.source.push(msg)
-    }
-    const onEnd = () => {
-      log('initiator stream %s ended', id)
-      this._streams.initiators.delete(id)
-    }
-    const stream = createStream({ id, name, send, onEnd })
-    this._streams.initiators.set(id, stream)
-    return stream
+    const registry = this._streams.initiators
+    return this._newStream({ id, name, type: 'initiator', registry })
   }
 
   _newReceiverStream ({ id, name }) {
-    if (this._streams.receivers.has(id)) {
-      throw new Error(`stream ${id} already exists!`)
+    const registry = this._streams.receivers
+    return this._newStream({ id, name, type: 'receiver', registry })
+  }
+
+  _newStream({ id, name, type, registry }) {
+    if (registry.has(id)) {
+      throw new Error(`${type} stream ${id} already exists!`)
     }
-    log('new receiver stream %s %s', id, name)
+    log('new %s stream %s %s', type, id, name)
     const send = msg => {
       if (log.enabled) {
-        log('receiver stream send', { id: msg.id, type: MessageTypeNames[msg.type], data: msg.data })
+        log('%s stream %s %s send', type, id, name, { id: msg.id, type: MessageTypeNames[msg.type], data: msg.data })
       }
       return this.source.push(msg)
     }
     const onEnd = () => {
-      log('receiver stream %s ended', id)
-      this._streams.receivers.delete(id)
+      log('%s stream %s %s ended', type, id, name)
+      registry.delete(id)
     }
-    const stream = createStream({ id, name, send, type: 'receiver', onEnd })
-    this._streams.receivers.set(id, stream)
+    const stream = createStream({ id, name, send, type, onEnd })
+    registry.set(id, stream)
     return stream
   }
 
@@ -75,8 +68,10 @@ class Mplex {
           Coder.decode,
           restrictSize(this._options.maxMsgSize),
           async source => {
-            for await (const msg of source) {
-              this._handleIncoming(msg)
+            for await (const msgs of source) {
+              for (const msg of msgs) {
+                this._handleIncoming(msg)
+              }
             }
           }
         )
@@ -96,7 +91,7 @@ class Mplex {
       for (const s of initiators.values()) s.abort(err)
       for (const s of receivers.values()) s.abort(err)
     }
-    const source = pushable(onEnd)
+    const source = pushable({ onEnd, writev: true })
     const encodedSource = pipe(
       source,
       restrictSize(this._options.maxMsgSize),

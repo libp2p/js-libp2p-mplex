@@ -3,6 +3,7 @@
 const Mplex = require('.')
 const AbortController = require('abort-controller')
 const pull = require('pull-stream/pull')
+const map = require('pull-stream/throughs/map')
 const toPull = require('async-iterator-to-pull-stream')
 const { Connection } = require('interface-connection')
 const EE = require('events')
@@ -48,6 +49,8 @@ function create (conn, isListener) {
   pull(
     conn,
     toPull.duplex(muxer),
+    // convert bl to Buffer
+    map(chunk => chunk.slice()),
     read => (end, cb) => {
       if (end) adapterMuxer.emit('close', end)
       read(end, cb)

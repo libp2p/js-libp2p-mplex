@@ -36,6 +36,7 @@ module.exports = ({ id, name, send, onEnd = (() => {}), type = 'initiator' }) =>
     close: () => stream.source.end(),
     // Close for reading and writing (local error)
     abort: err => {
+      log('%s stream %s abort', type, name, err)
       // End the source with the passed error
       stream.source.end(err)
       abortController.abort()
@@ -43,8 +44,10 @@ module.exports = ({ id, name, send, onEnd = (() => {}), type = 'initiator' }) =>
     // Close immediately for reading and writing (remote error)
     reset: () => resetController.abort(),
     sink: async source => {
-      source = abortable(source, abortController.signal, { abortMessage: 'stream aborted', abortCode: 'ERR_MPLEX_STREAM_ABORT' })
-      source = abortable(source, resetController.signal, { abortMessage: 'stream reset', abortCode: 'ERR_MPLEX_STREAM_RESET' })
+      source = abortable.multi(source, [
+        { signal: abortController.signal, options: { abortMessage: 'stream aborted', abortCode: 'ERR_MPLEX_STREAM_ABORT' } },
+        { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: 'ERR_MPLEX_STREAM_RESET' } }
+      ])
 
       if (type === 'initiator') { // If initiator, open a new stream
         send({ id, type: Types.NEW_STREAM, data: name })

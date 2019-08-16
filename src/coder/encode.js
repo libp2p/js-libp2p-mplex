@@ -1,9 +1,9 @@
 'use strict'
 
 const varint = require('varint')
+const BufferList = require('bl')
 
 const POOL_SIZE = 10 * 1024
-const empty = Buffer.alloc(0)
 
 class Encoder {
   constructor () {
@@ -29,7 +29,7 @@ class Encoder {
       this._poolOffset = offset
     }
 
-    if (!msg.data) return [header, empty]
+    if (!msg.data) return header
 
     return [header, msg.data]
   }
@@ -37,11 +37,13 @@ class Encoder {
 
 const encoder = new Encoder()
 
+// Encode one or more messages and yield a BufferList of encoded messages
 module.exports = source => (async function * encode () {
   for await (const msg of source) {
-    const chunks = encoder.write(msg)
-    for (let i = 0; i < chunks.length; i++) {
-      yield chunks[i]
+    if (Array.isArray(msg)) {
+      yield new BufferList(msg.map(m => encoder.write(m)))
+    } else {
+      yield new BufferList(encoder.write(msg))
     }
   }
 })()

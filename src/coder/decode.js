@@ -3,11 +3,12 @@
 const varint = require('varint')
 const BufferList = require('bl')
 
+// Decode a chunk and yield an _array_ of decoded messages
 module.exports = source => (async function * decode () {
   const decoder = new Decoder()
-  for await (const chunk of source) {
+  for await (let chunk of source) {
     const msgs = decoder.write(chunk)
-    for (let i = 0; i < msgs.length; i++) yield msgs[i]
+    if (msgs.length) yield msgs
   }
 })()
 
@@ -25,38 +26,29 @@ class Decoder {
     if (!chunk || !chunk.length) return []
 
     this._buffer.append(chunk)
+    const msgs = []
 
-    if (!this._headerInfo) {
-      try {
-        this._headerInfo = this._decodeHeader(this._bufferProxy)
-      } catch (err) {
-        return [] // not enough data yet...probably
+    while (true) {
+      if (!this._headerInfo) {
+        try {
+          this._headerInfo = this._decodeHeader(this._bufferProxy)
+        } catch (_) {
+          break // not enough data yet...probably
+        }
       }
 
-      // remove the header from the buffer
-      this._buffer = this._buffer.shallowSlice(this._headerInfo.offset)
-    }
+      const { id, type, length, offset } = this._headerInfo
+      const bufferedDataLength = this._buffer.length - offset
 
-    const { id, type, length } = this._headerInfo
+      if (bufferedDataLength < length) break // not enough data yet
 
-    if (this._buffer.length < length) return [] // not enough data yet
+      msgs.push({ id, type, data: this._buffer.shallowSlice(offset, offset + length) })
 
-    if (this._buffer.length === length) {
-      const msg = { id, type, data: this._buffer }
-
+      this._buffer.consume(offset + length)
       this._headerInfo = null
-      this._buffer = new BufferList()
-
-      return [msg]
     }
 
-    const msg = { id, type, data: this._buffer.shallowSlice(0, length) }
-    const rest = this._buffer.shallowSlice(length)
-
-    this._headerInfo = null
-    this._buffer = new BufferList()
-
-    return [msg, ...this.write(rest)]
+    return msgs
   }
 
   _decodeHeader (data) {

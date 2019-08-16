@@ -14,9 +14,9 @@ describe('coder', () => {
   it('should encode header', async () => {
     const source = [{ id: 17, type: 0, data: Buffer.from('17') }]
 
-    let data = Buffer.alloc(0)
+    const data = new BufferList()
     for await (const chunk of coder.encode(source)) {
-      data = Buffer.concat([data, chunk])
+      data.append(chunk)
     }
 
     const expectedHeader = Buffer.from('880102', 'hex')
@@ -25,9 +25,10 @@ describe('coder', () => {
 
   it('should decode header', async () => {
     const source = [Buffer.from('8801023137', 'hex')]
-    for await (const msg of coder.decode(source)) {
-      msg.data = msg.data.slice() // convert BufferList to Buffer
-      expect(msg).to.be.eql({ id: 17, type: 0, data: Buffer.from('17') })
+    for await (const msgs of coder.decode(source)) {
+      expect(msgs.length).to.equal(1)
+      msgs[0].data = msgs[0].data.slice() // convert BufferList to Buffer
+      expect(msgs[0]).to.be.eql({ id: 17, type: 0, data: Buffer.from('17') })
     }
   })
 
@@ -72,9 +73,11 @@ describe('coder', () => {
     const source = [Buffer.from('88010231379801023139a801023231', 'hex')]
 
     const res = []
-    for await (const msg of coder.decode(source)) {
-      msg.data = msg.data.slice() // convert BufferList to Buffer
-      res.push(msg)
+    for await (const msgs of coder.decode(source)) {
+      for (const msg of msgs) {
+        msg.data = msg.data.slice() // convert BufferList to Buffer
+        res.push(msg)
+      }
     }
 
     expect(res).to.be.deep.eql([
@@ -98,9 +101,10 @@ describe('coder', () => {
   it('should decode zero length body msg', async () => {
     const source = [Buffer.from('880100', 'hex')]
 
-    for await (const msg of coder.decode(source)) {
-      msg.data = msg.data.slice() // convert BufferList to Buffer
-      expect(msg).to.be.eql({ id: 17, type: 0, data: Buffer.alloc(0) })
+    for await (const msgs of coder.decode(source)) {
+      expect(msgs.length).to.equal(1)
+      msgs[0].data = msgs[0].data.slice() // convert BufferList to Buffer
+      expect(msgs[0]).to.be.eql({ id: 17, type: 0, data: Buffer.alloc(0) })
     }
   })
 })
