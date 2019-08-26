@@ -7,6 +7,11 @@ const Muxer = require('./muxer')
 
 const pump = require('pump')
 
+/**
+ *
+ * @param {*} rawConn 
+ * @param {*} isListener 
+ */
 function create (rawConn, isListener) {
   const stream = toStream(rawConn)
 

@@ -1,6 +1,8 @@
 'use strict'
 /* @flow */
-
+/**
+ * @module internals
+ */
 const stream = require('readable-stream')
 const varint = require('varint')
 const debug = require('debug')
@@ -24,6 +26,9 @@ type MultiplexOpts = {
 type ChannelCallback = (Channel) => void
 */
 
+/**
+ * @class
+ */
 class Multiplex extends stream.Duplex {
   constructor (opts/* :: ?: MultiplexOpts | ChannelCallback */, onchannel /* :: ?: ChannelCallback */) {
     super()

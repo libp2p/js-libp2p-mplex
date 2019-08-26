@@ -16,7 +16,8 @@
     "test:browser": "aegir test -t browser",
     "release": "aegir release -t node -t browser",
     "release-minor": "aegir release --type minor -t node -t browser",
-    "release-major": "aegir release --type major -t node -t browser"
+    "release-major": "aegir release --type major -t node -t browser",
+    "generate-typings": "./node_modules/.bin/jsdoc -c ./.jsdoc.json"
   },
   "repository": {
     "type": "git",
@@ -36,11 +37,14 @@
     "chai-checkmark": "^1.0.1",
     "dirty-chai": "^2.0.1",
     "interface-stream-muxer": "~0.6.0",
+    "jsdoc": "^3.6.3",
     "libp2p-tcp": "~0.13.0",
     "libp2p-websockets": "~0.12.2",
     "multiaddr": "^6.0.6",
     "pull-pair": "^1.1.0",
-    "through2": "^2.0.3"
+    "through2": "^2.0.3",
+    "tsd-jsdoc": "^2.3.1",
+    "typescript-definition-tester": "0.0.6"
   },
   "dependencies": {
     "async": "^2.6.2",

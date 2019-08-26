@@ -1,6 +1,8 @@
 'use strict'
 /* @flow */
-
+/**
+ * @module internals
+ */
 const stream = require('readable-stream')
 const debug = require('debug')
 
@@ -12,7 +14,9 @@ export type ChannelOpts = {
   lazy?: bool
 }
 */
-
+/**
+ * @class
+ */
 class Channel extends stream.Duplex {
   constructor (name/* : Buffer | string */, plex/* : Multiplex */, opts/* : ChannelOpts = {} */) {
     const halfOpen = Boolean(opts.halfOpen)

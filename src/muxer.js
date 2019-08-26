@@ -32,7 +32,15 @@ function catchError (stream) {
   }
 }
 
+/**
+ * @class 
+ */
 class MultiplexMuxer extends EventEmitter {
+  /**
+   *
+   * @param {object} conn 
+   * @param {*} multiplex 
+   */
   constructor (conn, multiplex) {
     super()
     this.multiplex = multiplex
@@ -67,6 +75,11 @@ class MultiplexMuxer extends EventEmitter {
     }
   }
 
+  /**
+   * enable pure stream
+   *
+   * @param {function} callback 
+   */
   // method added to enable pure stream muxer feeling
   newStream (callback) {
     callback = callback || noop
