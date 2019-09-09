@@ -36,7 +36,7 @@ class Mplex {
     return this._newStream({ id, name, type: 'receiver', registry })
   }
 
-  _newStream({ id, name, type, registry }) {
+  _newStream ({ id, name, type, registry }) {
     if (registry.has(id)) {
       throw new Error(`${type} stream ${id} already exists!`)
     }

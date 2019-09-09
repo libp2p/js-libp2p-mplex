@@ -6,7 +6,7 @@ const BufferList = require('bl')
 // Decode a chunk and yield an _array_ of decoded messages
 module.exports = source => (async function * decode () {
   const decoder = new Decoder()
-  for await (let chunk of source) {
+  for await (const chunk of source) {
     const msgs = decoder.write(chunk)
     if (msgs.length) yield msgs
   }
