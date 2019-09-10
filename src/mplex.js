@@ -43,7 +43,7 @@ class Mplex {
     log('new %s stream %s %s', type, id, name)
     const send = msg => {
       if (log.enabled) {
-        log('%s stream %s %s send', type, id, name, { ...msg, type: MessageTypeNames[msg.type] })
+        log('%s stream %s %s send', type, id, name, { ...msg, type: MessageTypeNames[msg.type], data: msg.data.slice() })
       }
       return this.source.push(msg)
     }
