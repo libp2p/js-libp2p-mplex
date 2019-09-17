@@ -4,7 +4,8 @@ exports.toIterable = socket => {
     sink: async source => {
       try {
         for await (const chunk of source) {
-          socket.write(chunk)
+          // Chunk is a BufferList, pass the underlying buffer to to the socket
+          socket.write(chunk.slice())
         }
       } catch (err) {
         // If not an abort then destroy the socket with an error
