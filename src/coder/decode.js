@@ -15,13 +15,17 @@ module.exports = source => (async function * decode () {
 class Decoder {
   constructor () {
     this._buffer = new BufferList()
-    // optimisation to allow varint to take a bl (well a proxy to)
+    // optimization to allow varint to take a BufferList (well a proxy to)
     this._bufferProxy = new Proxy({}, {
       get: (_, prop) => prop[0] === 'l' ? this._buffer[prop] : this._buffer.get(parseInt(prop))
     })
     this._headerInfo = null
   }
 
+  /**
+   * @param {Buffer|BufferList} chunk
+   * @returns {object[]} An array of message objects
+   */
   write (chunk) {
     if (!chunk || !chunk.length) return []
 
@@ -33,7 +37,7 @@ class Decoder {
         try {
           this._headerInfo = this._decodeHeader(this._bufferProxy)
         } catch (_) {
-          break // not enough data yet...probably
+          break // We haven't received enough data yet
         }
       }
 
@@ -51,6 +55,12 @@ class Decoder {
     return msgs
   }
 
+  /**
+   * Attempts to decode the message header from the buffer
+   * @private
+   * @param {Buffer} data
+   * @returns {*} message header (id, type, offset, length)
+   */
   _decodeHeader (data) {
     const h = varint.decode(data)
     let offset = varint.decode.bytes

@@ -11,6 +11,11 @@ class Encoder {
     this._poolOffset = 0
   }
 
+  /**
+   * Encodes the given message and returns it and its header
+   * @param {*} msg The message object to encode
+   * @returns {Buffer|Buffer[]}
+   */
   write (msg) {
     const pool = this._pool
     let offset = this._poolOffset

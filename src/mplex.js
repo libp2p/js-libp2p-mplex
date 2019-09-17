@@ -10,20 +10,51 @@ const { MessageTypes, MessageTypeNames } = require('./message-types')
 const createStream = require('./stream')
 
 class Mplex {
+  /**
+   * @constructor
+   * @param {object} options
+   * @param {function(*)} options.onStream Called whenever an inbound stream is created
+   * @param {AbortSignal} options.signal An AbortController signal
+   */
   constructor (options) {
     options = options || {}
     options = typeof options === 'function' ? { onStream: options } : options
 
     this._streamId = 0
-    this._streams = { initiators: new Map(), receivers: new Map() }
+    this._streams = {
+      /**
+       * @type {Map<number, *>} Stream to ids map
+       */
+      initiators: new Map(),
+      /**
+       * @type {Map<number, *>} Stream to ids map
+       */
+      receivers: new Map()
+    }
     this._options = options
 
+    /**
+     * An iterable sink
+     */
     this.sink = this._createSink()
+
+    /**
+     * An iterable source
+     */
     this.source = this._createSource()
+
+    /**
+     * @property {function} onStream
+     */
     this.onStream = options.onStream
   }
 
-  // Initiate a new stream with the given name
+  /**
+   * Initiate a new stream with the given name. If no name is
+   * provided, the id of th stream will be used.
+   * @param {string} [name] If name is not a string it will be cast to one
+   * @returns {Stream}
+   */
   newStream (name) {
     const id = this._streamId++
     name = name == null ? id.toString() : String(name)
@@ -31,11 +62,29 @@ class Mplex {
     return this._newStream({ id, name, type: 'initiator', registry })
   }
 
+  /**
+   * Called whenever an inbound stream is created
+   * @private
+   * @param {*} options
+   * @param {number} options.id
+   * @param {string} options.name
+   * @returns {*} A muxed stream
+   */
   _newReceiverStream ({ id, name }) {
     const registry = this._streams.receivers
     return this._newStream({ id, name, type: 'receiver', registry })
   }
 
+  /**
+   * Creates a new stream
+   * @private
+   * @param {object} options
+   * @param {number} options.id
+   * @param {string} options.name
+   * @param {string} options.type
+   * @param {Map<number, *>} options.registry A map of streams to their ids
+   * @returns {*} A muxed stream
+   */
   _newStream ({ id, name, type, registry }) {
     if (registry.has(id)) {
       throw new Error(`${type} stream ${id} already exists!`)
@@ -56,6 +105,12 @@ class Mplex {
     return stream
   }
 
+  /**
+   * Creates a sink with an abortable source. Incoming messages will
+   * also have their size restricted. All messages will be varint decoded.
+   * @private
+   * @returns {*} Returns an iterable sink
+   */
   _createSink () {
     return async source => {
       if (this._options.signal) {
@@ -84,6 +139,12 @@ class Mplex {
     }
   }
 
+  /**
+   * Creates a source that restricts outgoing message sizes
+   * and varint encodes them.
+   * @private
+   * @returns {*} An iterable source
+   */
   _createSource () {
     const onEnd = err => {
       const { initiators, receivers } = this._streams
@@ -104,6 +165,14 @@ class Mplex {
     })
   }
 
+  /**
+   * @private
+   * @param {object} options
+   * @param {number} options.id
+   * @param {string} options.type
+   * @param {Buffer|BufferList} options.data
+   * @returns {void}
+   */
   _handleIncoming ({ id, type, data }) {
     if (log.enabled) {
       log('incoming message', { id, type: MessageTypeNames[type], data: data.slice() })

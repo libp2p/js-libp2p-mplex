@@ -6,7 +6,16 @@ const log = require('debug')('libp2p:mplex:stream')
 const pushable = require('it-pushable')
 const { InitiatorMessageTypes, ReceiverMessageTypes } = require('./message-types')
 
-module.exports = ({ id, name, send, onEnd = (() => {}), type = 'initiator' }) => {
+/**
+ * @param {object} options
+ * @param {number} options.id
+ * @param {string} options.name
+ * @param {function(*)} options.send Called to send data through the stream
+ * @param {function(Error)} [options.onEnd] Called whenever the stream ends
+ * @param {string} options.type One of ['initiator','receiver']. Defaults to 'initiator'
+ * @returns {*} A muxed stream
+ */
+module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator' }) => {
   const abortController = new AbortController()
   const resetController = new AbortController()
   const Types = type === 'initiator' ? InitiatorMessageTypes : ReceiverMessageTypes
