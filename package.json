@@ -42,7 +42,7 @@
     "aegir": "^20.0.0",
     "chai": "^4.2.0",
     "dirty-chai": "^2.0.1",
-    "interface-stream-muxer": "libp2p/js-libp2p-mplex#feat/streams",
+    "interface-stream-muxer": "libp2p/interface-stream-muxer#feat/streams",
     "p-defer": "^3.0.0",
     "random-bytes": "^1.0.0",
     "random-int": "^2.0.0"
