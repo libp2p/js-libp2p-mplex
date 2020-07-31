@@ -97,6 +97,11 @@ class Mplex {
     return this._newStream({ id, name, type: 'receiver', registry })
   }
 
+  _removeStream (id) {
+    this._streams.initiators.delete(id)
+    this._streams.receivers.delete(id)
+  }
+
   /**
    * Creates a new stream
    * @private
@@ -121,6 +126,7 @@ class Mplex {
     const onEnd = () => {
       log('%s stream %s %s ended', type, id, name)
       registry.delete(id)
+      this._removeStream(id)
       this.onStreamEnd && this.onStreamEnd(stream)
     }
     const stream = createStream({ id, name, send, type, onEnd, maxMsgSize: this._options.maxMsgSize })
@@ -215,6 +221,7 @@ class Mplex {
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:
         stream.close()
+        this._removeStream(id)
         break
       case MessageTypes.RESET_INITIATOR:
       case MessageTypes.RESET_RECEIVER:
