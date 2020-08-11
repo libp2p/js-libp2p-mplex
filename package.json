@@ -8,6 +8,9 @@
     "dist",
     "src"
   ],
+  "browser": {
+    "./src/coder/encode.js": "./src/coder/encode.browser.js"
+  },
   "scripts": {
     "lint": "aegir lint",
     "build": "aegir build",
