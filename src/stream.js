@@ -32,10 +32,10 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
 
   let sourceEnded = false
   let sinkEnded = false
-  let sinkStarted = false
   let endErr
 
   const onSourceEnd = err => {
+    if (sourceEnded) return
     sourceEnded = true
     log('%s stream %s source end', type, name, err)
     if (err && !endErr) endErr = err
@@ -46,6 +46,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
   }
 
   const onSinkEnd = err => {
+    if (sinkEnded) return
     sinkEnded = true
     log('%s stream %s sink end', type, name, err)
     if (err && !endErr) endErr = err
@@ -63,26 +64,17 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       log('%s stream %s abort', type, name, err)
       // End the source with the passed error
       stream.source.end(err)
-      // If writing has started abort, otherwise end the sink
-      if (sinkStarted) {
-        abortController.abort()
-      } else {
-        onSinkEnd(err)
-      }
+      abortController.abort(err)
+      onSinkEnd(err)
     },
     // Close immediately for reading and writing (remote error)
     reset: () => {
       const err = errCode(new Error('stream reset'), ERR_MPLEX_STREAM_RESET)
-      // If writing has started reset, otherwise end the sink
-      if (sinkStarted) {
-        resetController.abort()
-      } else {
-        stream.source.end(err)
-        onSinkEnd(err)
-      }
+      resetController.abort()
+      stream.source.end(err)
+      onSinkEnd(err)
     },
     sink: async source => {
-      sinkStarted = true
       source = abortable(source, [
         { signal: abortController.signal, options: { abortMessage: 'stream aborted', abortCode: ERR_MPLEX_STREAM_ABORT } },
         { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: ERR_MPLEX_STREAM_RESET } }
