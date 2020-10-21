@@ -64,7 +64,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       log('%s stream %s abort', type, name, err)
       // End the source with the passed error
       stream.source.end(err)
-      abortController.abort(err)
+      abortController.abort()
       onSinkEnd(err)
     },
     // Close immediately for reading and writing (remote error)

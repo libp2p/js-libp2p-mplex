@@ -77,11 +77,13 @@ describe('stream', () => {
     const id = randomInt(1000)
     const name = `STREAM${Date.now()}`
     const deferred = defer()
-    const stream = createStream({ id, name, onEnd: () => deferred.resolve(), send: mockSend })
+    const stream = createStream({ id, name, onEnd: deferred.resolve, send: mockSend })
 
-    stream.abort()
+    const error = new Error('boom')
+    stream.abort(error)
 
-    await deferred.promise
+    const err = await deferred.promise
+    expect(err).to.equal(error)
   })
 
   it('should end a stream when it is reset', async () => {
@@ -90,11 +92,13 @@ describe('stream', () => {
     const id = randomInt(1000)
     const name = `STREAM${Date.now()}`
     const deferred = defer()
-    const stream = createStream({ id, name, onEnd: () => deferred.resolve(), send: mockSend })
+    const stream = createStream({ id, name, onEnd: deferred.resolve, send: mockSend })
 
     stream.reset()
 
-    await deferred.promise
+    const err = await deferred.promise
+    expect(err).to.exist()
+    expect(err).to.have.property('code', 'ERR_MPLEX_STREAM_RESET')
   })
 
   it('should send data with MESSAGE_INITIATOR messages if stream initiator', async () => {
