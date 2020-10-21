@@ -71,6 +71,32 @@ describe('stream', () => {
     expect(msgs[0].data).to.deep.equal(name)
   })
 
+  it('should end a stream when it is aborted', async () => {
+    const msgs = []
+    const mockSend = msg => msgs.push(msg)
+    const id = randomInt(1000)
+    const name = `STREAM${Date.now()}`
+    const deferred = defer()
+    const stream = createStream({ id, name, onEnd: () => deferred.resolve(), send: mockSend })
+
+    stream.abort()
+
+    await deferred.promise
+  })
+
+  it('should end a stream when it is reset', async () => {
+    const msgs = []
+    const mockSend = msg => msgs.push(msg)
+    const id = randomInt(1000)
+    const name = `STREAM${Date.now()}`
+    const deferred = defer()
+    const stream = createStream({ id, name, onEnd: () => deferred.resolve(), send: mockSend })
+
+    stream.reset()
+
+    await deferred.promise
+  })
+
   it('should send data with MESSAGE_INITIATOR messages if stream initiator', async () => {
     const msgs = []
     const mockSend = msg => msgs.push(msg)
