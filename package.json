@@ -43,7 +43,7 @@
   "homepage": "https://github.com/libp2p/js-libp2p-mplex#readme",
   "devDependencies": {
     "aegir": "^30.3.0",
-    "libp2p-interfaces": "libp2p/js-libp2p-interfaces#chore/update-deps-25_01_2021",
+    "libp2p-interfaces": "^0.8.3",
     "p-defer": "^3.0.0",
     "random-bytes": "^1.0.0",
     "random-int": "^2.0.0",
