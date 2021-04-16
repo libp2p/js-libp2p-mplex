@@ -1,16 +1,33 @@
 'use strict'
 
-module.exports = {
-  webpack: {
-    node: {
-      // needed by random-bytes
-      crypto: true,
-
-      // needed by cipher-base
-      stream: true,
-
-      // needed by core-util-is
-      Buffer: true
+/** @type {import('aegir').Options["build"]["config"]} */
+const esbuild = {
+  plugins: [
+    {
+      name: 'node built ins',
+      setup (build) {
+        build.onResolve({ filter: /^stream$/ }, () => {
+          return { path: require.resolve('readable-stream') }
+        })
+        build.onResolve({ filter: /^crypto$/ }, () => {
+          return { path: require.resolve('crypto-browserify') }
+        })
+      }
     }
+  ]
+}
+
+/** @type {import('aegir').PartialOptions} */
+module.exports = {
+  test: {
+    browser: {
+      config: {
+        buildConfig: esbuild
+      }
+    }
+  },
+  build: {
+    bundlesizeMax: '614kB',
+    config: esbuild
   }
 }
