@@ -8,6 +8,7 @@ const BufferList = require('bl/BufferList')
 const errCode = require('err-code')
 const { MAX_MSG_SIZE } = require('./restrict-size')
 const { InitiatorMessageTypes, ReceiverMessageTypes } = require('./message-types')
+const pDefer = require('p-defer')
 
 const ERR_MPLEX_STREAM_RESET = 'ERR_MPLEX_STREAM_RESET'
 const ERR_MPLEX_STREAM_ABORT = 'ERR_MPLEX_STREAM_ABORT'
@@ -40,6 +41,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
   let sourceEnded = false
   let sinkEnded = false
   let sinkCalled = false
+  let sinkClosedDefer
   let endErr
 
   const onSourceEnd = err => {
@@ -58,6 +60,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     sinkEnded = true
     log('%s stream %s sink end', type, name, err)
     if (err && !endErr) endErr = err
+    if (sinkClosedDefer) sinkClosedDefer.resolve()
     if (sourceEnded) {
       stream.timeline.close = Date.now()
       onEnd(endErr)
@@ -75,7 +78,13 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     closeRead: () => stream.source.end(),
     // Close for writing
     closeWrite: () => {
-      sinkCalled ? writeCloseController.abort() : stream.sink([])
+      if (sinkCalled) {
+        sinkClosedDefer = pDefer()
+        writeCloseController.abort()
+        return sinkClosedDefer.promise
+      }
+
+      return stream.sink([])
     },
     // Close for reading and writing (local error)
     abort: err => {
