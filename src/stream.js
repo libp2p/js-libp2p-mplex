@@ -110,6 +110,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
         throw errCode(new Error('the sink was already opened'), 'ERR_SINK_ALREADY_OPENED')
       }
 
+      sinkInProgress = true
       source = abortable(source, [
         { signal: abortController.signal, options: { abortMessage: 'stream aborted', abortCode: ERR_MPLEX_STREAM_ABORT } },
         { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: ERR_MPLEX_STREAM_RESET } },
