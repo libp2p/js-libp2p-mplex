@@ -40,7 +40,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
 
   let sourceEnded = false
   let sinkEnded = false
-  let sinkCalled = false
+  let sinkInProgress = false
   let sinkClosedDefer
   let endErr
 
@@ -78,7 +78,11 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     closeRead: () => stream.source.end(),
     // Close for writing
     closeWrite: () => {
-      if (sinkCalled) {
+      if (sinkEnded) {
+        return
+      }
+
+      if (sinkInProgress) {
         sinkClosedDefer = pDefer()
         writeCloseController.abort()
         return sinkClosedDefer.promise
@@ -102,11 +106,10 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       onSinkEnd(err)
     },
     sink: async source => {
-      if (sinkCalled) {
+      if (sinkInProgress) {
         throw errCode(new Error('the sink was already opened'), 'ERR_SINK_ALREADY_OPENED')
       }
 
-      sinkCalled = true
       source = abortable(source, [
         { signal: abortController.signal, options: { abortMessage: 'stream aborted', abortCode: ERR_MPLEX_STREAM_ABORT } },
         { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: ERR_MPLEX_STREAM_RESET } },
