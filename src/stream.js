@@ -60,11 +60,11 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     sinkEnded = true
     log('%s stream %s sink end', type, name, err)
     if (err && !endErr) endErr = err
-    if (sinkClosedDefer) sinkClosedDefer.resolve()
     if (sourceEnded) {
       stream.timeline.close = Date.now()
       onEnd(endErr)
     }
+    if (sinkClosedDefer) sinkClosedDefer.resolve()
   }
 
   /** @type {MuxedStream} */
