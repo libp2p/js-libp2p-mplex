@@ -46,7 +46,7 @@
     "aegir": "^33.1.0",
     "cborg": "^1.2.1",
     "iso-random-stream": "^2.0.0",
-    "libp2p-interfaces": "libp2p/js-libp2p-interfaces#feat/muxed-stream-close-read-and-write",
+    "libp2p-interfaces": "github:filoozom/js-libp2p-interfaces#close-read-write",
     "p-defer": "^3.0.0",
     "random-int": "^2.0.0",
     "streaming-iterables": "^5.0.4",
