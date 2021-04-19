@@ -11,6 +11,7 @@ const { InitiatorMessageTypes, ReceiverMessageTypes } = require('./message-types
 
 const ERR_MPLEX_STREAM_RESET = 'ERR_MPLEX_STREAM_RESET'
 const ERR_MPLEX_STREAM_ABORT = 'ERR_MPLEX_STREAM_ABORT'
+const MPLEX_WRITE_STREAM_CLOSED = 'MPLEX_WRITE_STREAM_CLOSED'
 
 /**
  * @typedef {import('libp2p-interfaces/src/stream-muxer/types').MuxedStream} MuxedStream
@@ -99,7 +100,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       sinkCalled = true
       source = abortable(source, [
         { signal: abortController.signal, options: { abortMessage: 'stream aborted', abortCode: ERR_MPLEX_STREAM_ABORT } },
-        { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: ERR_MPLEX_STREAM_RESET } },        
+        { signal: resetController.signal, options: { abortMessage: 'stream reset', abortCode: ERR_MPLEX_STREAM_RESET } },
         { signal: writeCloseController.signal, options: { abortMessage: 'write stream closed', abortCode: MPLEX_WRITE_STREAM_CLOSED } }
       ])
 
