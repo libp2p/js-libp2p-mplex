@@ -102,14 +102,14 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       // End the source with the passed error
       stream.source.end(err)
       abortController.abort()
-      onSinkEnd(err)
+      sinkInProgress || onSinkEnd(err)
     },
     // Close immediately for reading and writing (remote error)
     reset: () => {
       const err = errCode(new Error('stream reset'), ERR_MPLEX_STREAM_RESET)
       resetController.abort()
       stream.source.end(err)
-      onSinkEnd(err)
+      sinkInProgress || onSinkEnd(err)
     },
     sink: async source => {
       if (sinkInProgress) {
