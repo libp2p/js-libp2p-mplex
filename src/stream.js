@@ -40,8 +40,8 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
 
   let sinkInProgress = false
   let endErr
-  let ended = {}
-  let defers = {}
+  const ended = {}
+  const defers = {}
 
   const end = (type, err) => {
     if (!ended[type]) {
@@ -80,7 +80,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     stream.source.end(err)
     return defers.source.promise
   }
-  
+
   const closeAll = (controller, err) => {
     return Promise.all([
       closeWrite(controller, err),
