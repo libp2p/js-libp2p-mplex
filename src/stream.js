@@ -38,82 +38,83 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
 
   name = String(name == null ? id : name)
 
-  let sourceEnded = false
-  let sinkEnded = false
   let sinkInProgress = false
-  let sinkClosedDefer
   let endErr
+  let ended = {}
+  let defers = {}
 
-  const onSourceEnd = err => {
-    if (sourceEnded) return
-    sourceEnded = true
-    log('%s stream %s source end', type, name, err)
-    if (err && !endErr) endErr = err
-    if (sinkEnded) {
-      stream.timeline.close = Date.now()
-      onEnd(endErr)
+  const end = (type, err) => {
+    if (!ended[type]) {
+      ended[type] = true
+      log('%s stream %s %s end', type, name, type, err)
+      stream.timeline[`${type}Close`] = Date.now()
+
+      if (ended.source && ended.sink) {
+        stream.timeline.close = Date.now()
+        onEnd(endErr)
+      } else {
+        endErr = err
+      }
     }
+
+    defers[type] && defers[type].resolve()
   }
 
-  const onSinkEnd = err => {
-    if (sinkEnded) return
-    sinkEnded = true
-    log('%s stream %s sink end', type, name, err)
-    if (err && !endErr) endErr = err
-    if (sourceEnded) {
-      stream.timeline.close = Date.now()
-      onEnd(endErr)
-    }
-    if (sinkClosedDefer) sinkClosedDefer.resolve()
+  const closeWrite = (controller, err) => {
+    // This function doesn't need a ended.sink guard
+    defers.sink = pDefer()
+
+    // Make sure we're still in the sink when aborting
+    // If the sink wasn't opened yet, just close it without creating a new stream
+    sinkInProgress && !ended.sink ? controller.abort() : end('sink', err)
+    return defers.sink.promise
   }
 
-  const _send = (message) => {
-    if (!sinkEnded) {
-      send(message)
+  const closeRead = (err) => {
+    // Needed because pushable doesn't call the end function multiple times
+    if (ended.source) {
+      return
     }
+
+    defers.source = pDefer()
+    stream.source.end(err)
+    return defers.source.promise
   }
+  
+  const closeAll = (controller, err) => {
+    return Promise.all([
+      closeWrite(controller, err),
+      closeRead(err)
+    ])
+  }
+
+  const _send = (message) => !ended.sink && send(message)
 
   /** @type {MuxedStream} */
   const stream = {
     // Close for both Reading and Writing
-    close: () => Promise.all([
-      stream.closeRead(),
-      stream.closeWrite()
-    ]),
+    close: () => closeAll(writeCloseController),
     // Close for reading
-    closeRead: () => stream.source.end(),
+    closeRead: () => closeRead(),
     // Close for writing
-    closeWrite: () => {
-      if (sinkEnded) {
-        return
-      }
-
-      if (sinkInProgress) {
-        sinkClosedDefer = pDefer()
-        writeCloseController.abort()
-        return sinkClosedDefer.promise
-      }
-
-      return stream.sink([])
-    },
+    closeWrite: () => closeWrite(writeCloseController),
     // Close for reading and writing (local error)
     abort: err => {
       log('%s stream %s abort', type, name, err)
-      // End the source with the passed error
-      stream.source.end(err)
-      abortController.abort()
-      sinkInProgress || onSinkEnd(err)
+      return closeAll(abortController, err)
     },
     // Close immediately for reading and writing (remote error)
     reset: () => {
       const err = errCode(new Error('stream reset'), ERR_MPLEX_STREAM_RESET)
-      resetController.abort()
-      stream.source.end(err)
-      sinkInProgress || onSinkEnd(err)
+      return closeAll(resetController, err)
     },
     sink: async source => {
       if (sinkInProgress) {
         throw errCode(new Error('the sink was already opened'), 'ERR_SINK_ALREADY_OPENED')
+      }
+
+      if (ended.sink) {
+        throw errCode(new Error('the stream was already closed'), 'ERR_STREAM_CLOSED')
       }
 
       sinkInProgress = true
@@ -150,14 +151,14 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
           }
 
           stream.source.end(err)
-          return onSinkEnd(err)
+          return end('sink', err)
         }
       }
 
       _send({ id, type: Types.CLOSE })
-      onSinkEnd()
+      end('sink')
     },
-    source: pushable(onSourceEnd),
+    source: pushable(end.bind(null, 'source')),
     timeline: {
       open: Date.now(),
       close: null
