@@ -67,6 +67,12 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     if (sinkClosedDefer) sinkClosedDefer.resolve()
   }
 
+  const _send = (message) => {
+    if (!sinkEnded) {
+      send(message)
+    }
+  }
+
   /** @type {MuxedStream} */
   const stream = {
     // Close for both Reading and Writing
@@ -118,18 +124,18 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       ])
 
       if (type === 'initiator') { // If initiator, open a new stream
-        send({ id, type: Types.NEW_STREAM, data: name })
+        _send({ id, type: Types.NEW_STREAM, data: name })
       }
 
       try {
         for await (let data of source) {
           while (data.length) {
             if (data.length <= maxMsgSize) {
-              send({ id, type: Types.MESSAGE, data })
+              _send({ id, type: Types.MESSAGE, data })
               break
             }
             data = BufferList.isBufferList(data) ? data : new BufferList(data)
-            send({ id, type: Types.MESSAGE, data: data.shallowSlice(0, maxMsgSize) })
+            _send({ id, type: Types.MESSAGE, data: data.shallowSlice(0, maxMsgSize) })
             data.consume(maxMsgSize)
           }
         }
@@ -140,7 +146,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
             log('%s stream %s reset', type, name)
           } else {
             log('%s stream %s error', type, name, err)
-            send({ id, type: Types.RESET })
+            _send({ id, type: Types.RESET })
           }
 
           stream.source.end(err)
@@ -148,7 +154,7 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
         }
       }
 
-      send({ id, type: Types.CLOSE })
+      _send({ id, type: Types.CLOSE })
       onSinkEnd()
     },
     source: pushable(onSourceEnd),
