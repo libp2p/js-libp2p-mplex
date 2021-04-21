@@ -41,7 +41,10 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
   let sinkInProgress = false
   let endErr
   const ended = {}
-  const defers = {}
+  const defers = {
+    sink: [],
+    source: []
+  }
 
   const end = (type, err) => {
     if (!ended[type]) {
@@ -57,17 +60,24 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       }
     }
 
-    defers[type] && defers[type].resolve()
+    for (const defer of defers[type]) {
+      defer.resolve()
+    }
+    defers[type] = []
   }
 
   const closeWrite = (controller, err) => {
-    // This function doesn't need a ended.sink guard
-    defers.sink = pDefer()
+    if (ended.sink) {
+      return
+    }
+
+    const defer = pDefer()
+    defers.sink.push(defer)
 
     // Make sure we're still in the sink when aborting
     // If the sink wasn't opened yet, just close it without creating a new stream
     sinkInProgress && !ended.sink ? controller.abort() : end('sink', err)
-    return defers.sink.promise
+    return defer.promise
   }
 
   const closeRead = (err) => {
@@ -76,9 +86,10 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
       return
     }
 
-    defers.source = pDefer()
+    const defer = pDefer()
+    defers.source.push(defer)
     stream.source.end(err)
-    return defers.source.promise
+    return defer.promise
   }
 
   const closeAll = (controller, err) => {
