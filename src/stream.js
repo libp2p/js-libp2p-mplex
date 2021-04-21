@@ -112,12 +112,12 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     // Close for reading and writing (local error)
     abort: err => {
       log('%s stream %s abort', type, name, err)
-      return closeAll(abortController, err)
+      closeAll(abortController, err)
     },
     // Close immediately for reading and writing (remote error)
     reset: () => {
       const err = errCode(new Error('stream reset'), ERR_MPLEX_STREAM_RESET)
-      return closeAll(resetController, err)
+      closeAll(resetController, err)
     },
     sink: async source => {
       if (sinkInProgress) {
