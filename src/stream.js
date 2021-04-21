@@ -50,7 +50,6 @@ module.exports = ({ id, name, send, onEnd = () => {}, type = 'initiator', maxMsg
     if (!ended[type]) {
       ended[type] = true
       log('%s stream %s %s end', type, name, type, err)
-      stream.timeline[`${type}Close`] = Date.now()
 
       if (ended.source && ended.sink) {
         stream.timeline.close = Date.now()
