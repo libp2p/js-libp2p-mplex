@@ -47,7 +47,6 @@
     "cborg": "^1.2.1",
     "iso-random-stream": "^2.0.0",
     "libp2p-interfaces": "^1.0.0",
-    "libp2p-interfaces-compliance-tests": "^1.0.0",
     "p-defer": "^3.0.0",
     "random-int": "^2.0.0",
     "streaming-iterables": "^6.0.0",
@@ -61,6 +60,7 @@
     "err-code": "^3.0.1",
     "it-pipe": "^1.1.0",
     "it-pushable": "^1.4.1",
+    "libp2p-interfaces-compliance-tests": "^1.0.0",
     "varint": "^6.0.0"
   },
   "contributors": [
