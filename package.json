@@ -46,7 +46,7 @@
     "aegir": "^33.1.0",
     "cborg": "^1.2.1",
     "iso-random-stream": "^2.0.0",
-    "libp2p-interfaces": "^1.0.0",
+    "libp2p-interfaces": "^2.0.2",
     "libp2p-interfaces-compliance-tests": "^1.0.0",
     "p-defer": "^3.0.0",
     "random-int": "^2.0.0",
