@@ -51,7 +51,7 @@
     "p-defer": "^3.0.0",
     "random-int": "^2.0.0",
     "streaming-iterables": "^6.0.0",
-    "uint8arrays": "^2.0.5"
+    "uint8arrays": "^3.0.0"
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
