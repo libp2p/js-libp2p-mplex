@@ -138,7 +138,7 @@
     "debug": "^4.3.1",
     "err-code": "^3.0.1",
     "it-pipe": "^1.1.0",
-    "it-pushable": "^1.4.1",
+    "it-pushable": "^2.0.1",
     "varint": "^6.0.0"
   },
   "browser": {
