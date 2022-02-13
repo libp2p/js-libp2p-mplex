@@ -6,7 +6,7 @@ const POOL_SIZE = 10 * 1024
 
 function allocUnsafe (size: number) {
   if (globalThis.Buffer != null) {
-    return Buffer.allocUnsafe(POOL_SIZE)
+    return Buffer.allocUnsafe(size)
   }
 
   return new Uint8Array(size)
