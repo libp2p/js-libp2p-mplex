@@ -49,7 +49,7 @@ class Decoder {
       }
 
       if (type === MessageTypes.NEW_STREAM || type === MessageTypes.MESSAGE_INITIATOR || type === MessageTypes.MESSAGE_RECEIVER) {
-        msg.data = this._buffer.subarray(offset, offset + length)
+        msg.data = this._buffer.slice(offset, offset + length)
       }
 
       msgs.push(msg)
@@ -124,6 +124,7 @@ export async function * decode (source: Source<Uint8Array>) {
 
   for await (const chunk of source) {
     const msgs = decoder.write(chunk)
+
     if (msgs.length > 0) {
       yield msgs
     }

@@ -1,7 +1,7 @@
-import type { Message } from '../../src/message-types.js'
+import { Message, MessageTypes } from '../../src/message-types.js'
 
 export function messageWithBytes (msg: Message) {
-  if (msg.type === 0 || msg.type === 1 || msg.type === 2) {
+  if (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) {
     return {
       ...msg,
       data: msg.data.slice() // convert Uint8ArrayList to Buffer

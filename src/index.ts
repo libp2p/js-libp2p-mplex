@@ -1,6 +1,5 @@
 import { pipe } from 'it-pipe'
 import { Pushable, pushableV } from 'it-pushable'
-import debug from 'debug'
 import { abortableSource } from 'abortable-iterator'
 import { encode } from './encode.js'
 import { decode } from './decode.js'
@@ -8,13 +7,16 @@ import { restrictSize } from './restrict-size.js'
 import { MessageTypes, MessageTypeNames, Message } from './message-types.js'
 import { createStream } from './stream.js'
 import { toString as uint8ArrayToString } from 'uint8arrays'
+import { trackedMap } from '@libp2p/tracked-map'
+import { logger } from '@libp2p/logger'
 import type { AbortOptions } from '@libp2p/interfaces'
-import type { Duplex, Sink } from 'it-stream-types'
-import type { MuxedStream, Muxer, MuxedTimeline } from '@libp2p/interfaces/stream-muxer'
+import type { Sink } from 'it-stream-types'
+import type { Muxer } from '@libp2p/interfaces/stream-muxer'
+import type { Stream } from '@libp2p/interfaces/connection'
+import type { ComponentMetricsTracker } from '@libp2p/interfaces/metrics'
+import each from 'it-foreach'
 
-const log = Object.assign(debug('libp2p:mplex'), {
-  error: debug('libp2p:mplex:error')
-})
+const log = logger('libp2p:mplex')
 
 function printMessage (msg: Message) {
   const output: any = {
@@ -33,19 +35,15 @@ function printMessage (msg: Message) {
   return output
 }
 
-export interface MplexStream extends Duplex<Uint8Array> {
+export interface MplexStream extends Stream {
   source: Pushable<Uint8Array>
-  close: () => void
-  abort: (err?: Error) => void
-  reset: () => void
-  timeline: MuxedTimeline
-  id: string
 }
 
 export interface MplexOptions extends AbortOptions {
   onStream?: (...args: any[]) => void
   onStreamEnd?: (...args: any[]) => void
   maxMsgSize?: number
+  metrics?: ComponentMetricsTracker
 }
 
 export class Mplex implements Muxer {
@@ -59,27 +57,19 @@ export class Mplex implements Muxer {
   private readonly _options: MplexOptions
   private readonly _source: { push: (val: Message) => void, end: (err?: Error) => void }
 
-  /**
-   * @class
-   * @param {object} options
-   * @param {function(*)} options.onStream - Called whenever an inbound stream is created
-   * @param {function(*)} options.onStreamEnd - Called whenever a stream ends
-   * @param {AbortSignal} options.signal - An AbortController signal
-   */
   constructor (options?: MplexOptions) {
     options = options ?? {}
-    options = typeof options === 'function' ? { onStream: options } : options
 
     this._streamId = 0
     this._streams = {
       /**
        * Stream to ids map
        */
-      initiators: new Map<number, any>(),
+      initiators: trackedMap<number, MplexStream>({ metrics: options.metrics, component: 'mplex', metric: 'initiatorStreams' }),
       /**
        * Stream to ids map
        */
-      receivers: new Map<number, any>()
+      receivers: trackedMap<number, MplexStream>({ metrics: options.metrics, component: 'mplex', metric: 'receiverStreams' })
     }
     this._options = options
 
@@ -101,7 +91,7 @@ export class Mplex implements Muxer {
    */
   get streams () {
     // Inbound and Outbound streams may have the same ids, so we need to make those unique
-    const streams: MuxedStream[] = []
+    const streams: Stream[] = []
     this._streams.initiators.forEach(stream => {
       streams.push(stream)
     })
@@ -115,7 +105,7 @@ export class Mplex implements Muxer {
    * Initiate a new stream with the given name. If no name is
    * provided, the id of the stream will be used.
    */
-  newStream (name?: string): MuxedStream {
+  newStream (name?: string): Stream {
     const id = this._streamId++
     name = name == null ? id.toString() : name.toString()
     const registry = this._streams.initiators
@@ -131,29 +121,18 @@ export class Mplex implements Muxer {
     return this._newStream({ id, name, type: 'receiver', registry })
   }
 
-  /**
-   * Creates a new stream
-   *
-   * @private
-   * @param {object} options
-   * @param {number} options.id
-   * @param {string} options.name
-   * @param {string} options.type
-   * @param {Map<number, *>} options.registry - A map of streams to their ids
-   * @returns {*} A muxed stream
-   */
-  _newStream (options: { id: number, name: string, type: 'initiator' | 'receiver', registry: Map<number, MuxedStream> }) {
+  _newStream (options: { id: number, name: string, type: 'initiator' | 'receiver', registry: Map<number, MplexStream> }) {
     const { id, name, type, registry } = options
+
+    log('new %s stream %s %s', type, id, name)
 
     if (registry.has(id)) {
       throw new Error(`${type} stream ${id} already exists!`)
     }
 
-    log('new %s stream %s %s', type, id, name)
-
     const send = (msg: Message) => {
       if (log.enabled) {
-        log('%s stream %s %s send', type, id, name, printMessage(msg))
+        log('%s stream %s send', type, id, printMessage(msg))
       }
 
       if (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) {
@@ -190,6 +169,9 @@ export class Mplex implements Muxer {
       try {
         await pipe(
           source,
+          source => each(source, (buf) => {
+            // console.info('incoming', uint8ArrayToString(buf, 'base64'))
+          }),
           decode,
           restrictSize(this._options.maxMsgSize),
           async source => {
@@ -225,6 +207,28 @@ export class Mplex implements Muxer {
       }
     }
     const source = pushableV<Message>({ onEnd })
+    /*
+    const p = pipe(
+      source,
+      source => each(source, (msgs) => {
+        if (log.enabled) {
+          msgs.forEach(msg => {
+            log('outgoing message', printMessage(msg))
+          })
+        }
+      }),
+      source => encode(source),
+      source => each(source, (buf) => {
+        console.info('outgoing', uint8ArrayToString(buf, 'base64'))
+      })
+    )
+
+    return Object.assign(p, {
+      push: source.push,
+      end: source.end,
+      return: source.return
+    })
+*/
     return Object.assign(encode(source), {
       push: source.push,
       end: source.end,
@@ -240,9 +244,14 @@ export class Mplex implements Muxer {
     }
 
     // Create a new stream?
-    if (message.type === MessageTypes.NEW_STREAM && (this._options.onStream != null)) {
+    if (message.type === MessageTypes.NEW_STREAM) {
       const stream = this._newReceiverStream({ id, name: uint8ArrayToString(message.data instanceof Uint8Array ? message.data : message.data.slice()) })
-      return this._options.onStream(stream)
+
+      if (this._options.onStream != null) {
+        this._options.onStream(stream)
+      }
+
+      return
     }
 
     const list = (type & 1) === 1 ? this._streams.initiators : this._streams.receivers

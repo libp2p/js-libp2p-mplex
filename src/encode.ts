@@ -1,5 +1,5 @@
 import varint from 'varint'
-import type { Message } from './message-types.js'
+import { Message, MessageTypes } from './message-types.js'
 import type { Source } from 'it-stream-types'
 
 const POOL_SIZE = 10 * 1024
@@ -30,8 +30,13 @@ class Encoder {
 
     varint.encode(msg.id << 3 | msg.type, pool, offset)
     offset += varint.encode.bytes
-    // @ts-expect-error not all messages have a data field
-    varint.encode(msg.data != null ? msg.data.length : 0, pool, offset)
+
+    if ((msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) && msg.data != null) {
+      varint.encode(msg.data.length, pool, offset)
+    } else {
+      varint.encode(0, pool, offset)
+    }
+
     offset += varint.encode.bytes
 
     const header = pool.slice(this._poolOffset, offset)
@@ -43,16 +48,15 @@ class Encoder {
       this._poolOffset = offset
     }
 
-    // @ts-expect-error not all messages have a data field
-    if (msg.data == null) {
+    if ((msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) && msg.data != null) {
       return [
-        header
+        header,
+        msg.data instanceof Uint8Array ? msg.data : msg.data.slice()
       ]
     }
 
     return [
-      // @ts-expect-error not all messages have a data field
-      header, msg.data
+      header
     ]
   }
 }
