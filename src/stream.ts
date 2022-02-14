@@ -163,7 +163,12 @@ export function createStream (options: Options): MplexStream {
         return
       }
 
-      send({ id, type: Types.CLOSE })
+      try {
+        send({ id, type: Types.CLOSE })
+      } catch (err) {
+        log('%s stream %s error sending close', type, name, err)
+      }
+
       onSinkEnd()
     },
     source: pushable<Uint8Array>({
