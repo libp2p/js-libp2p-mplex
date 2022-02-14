@@ -510,9 +510,8 @@ describe('stream', () => {
   })
 
   it('should call onEnd with error for local error', async () => {
-    const error = new Error(`Boom ${Date.now()}`)
     const send = () => {
-      throw error
+      throw new Error(`Local boom ${Date.now()}`)
     }
     const id = randomInt(1000)
     const deferred = defer()
@@ -520,13 +519,13 @@ describe('stream', () => {
     const stream = createStream({ id, send, onEnd })
     const input = randomInput()
 
-    void pipe(
+    pipe(
       input,
       stream,
       drain
-    )
+    ).catch(() => {})
 
-    await expect(deferred.promise).to.eventually.be.rejectedWith(error)
+    await expect(deferred.promise).to.eventually.be.rejectedWith(/Local boom/)
   })
 
   it('should split writes larger than max message size', async () => {
