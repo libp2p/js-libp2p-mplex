@@ -3,13 +3,13 @@
   "version": "1.0.1",
   "description": "JavaScript implementation of https://github.com/libp2p/mplex",
   "license": "Apache-2.0 OR MIT",
-  "homepage": "https://github.com/libp2p/js-libp2p-interfaces/tree/master/packages/libp2p-mplex#readme",
+  "homepage": "https://github.com/libp2p/js-libp2p-mplex#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/libp2p/js-libp2p-interfaces.git"
+    "url": "git+https://github.com/libp2p/js-libp2p-mplex.git"
   },
   "bugs": {
-    "url": "https://github.com/libp2p/js-libp2p-interfaces/issues"
+    "url": "https://github.com/libp2p/js-libp2p-mplex/issues"
   },
   "keywords": [
     "IPFS",
