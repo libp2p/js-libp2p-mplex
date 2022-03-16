@@ -9,7 +9,6 @@ import { createStream } from './stream.js'
 import { toString as uint8ArrayToString } from 'uint8arrays'
 import { trackedMap } from '@libp2p/tracked-map'
 import { logger } from '@libp2p/logger'
-import each from 'it-foreach'
 import type { Components } from '@libp2p/interfaces/components'
 import type { Sink } from 'it-stream-types'
 import type { StreamMuxer, StreamMuxerInit } from '@libp2p/interfaces/stream-muxer'
@@ -169,9 +168,6 @@ export class MplexStreamMuxer implements StreamMuxer {
       try {
         await pipe(
           source,
-          source => each(source, (buf) => {
-            // console.info('incoming', uint8ArrayToString(buf, 'base64'))
-          }),
           decode,
           restrictSize(this._init.maxMsgSize),
           async source => {
