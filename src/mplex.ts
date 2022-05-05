@@ -235,10 +235,6 @@ export class MplexStreamMuxer implements StreamMuxer {
     if (stream == null) {
       log('missing stream %s', id)
 
-      // send a reset
-      this._source.push({ id, type: InitiatorMessageTypes.RESET })
-      this._source.push({ id, type: ReceiverMessageTypes.RESET })
-
       return
     }
 
