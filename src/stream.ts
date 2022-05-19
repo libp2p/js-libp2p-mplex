@@ -32,6 +32,7 @@ export function createStream (options: Options): MplexStream {
 
   const abortController = new AbortController()
   const resetController = new AbortController()
+  const closeController = new AbortController()
   const Types = type === 'initiator' ? InitiatorMessageTypes : ReceiverMessageTypes
   const externalId = type === 'initiator' ? (`i${id}`) : `r${id}`
   const streamName = `${name == null ? id : name}`
@@ -50,7 +51,7 @@ export function createStream (options: Options): MplexStream {
     }
 
     sourceEnded = true
-    log.trace('%s stream %s source end', type, streamName, err)
+    log.trace('%s stream %s source end - err: %o', type, streamName, err)
 
     if (err != null && endErr == null) {
       endErr = err
@@ -89,35 +90,53 @@ export function createStream (options: Options): MplexStream {
   const stream = {
     // Close for both Reading and Writing
     close: async () => {
+      log.trace('%s stream %s close', type, streamName)
+
       await Promise.all([
         stream.closeRead(),
         stream.closeWrite()
       ])
     },
+
     // Close for reading
     closeRead: async () => {
+      log.trace('%s stream %s closeRead', type, streamName)
+
       if (sourceEnded) {
         return
       }
 
       await stream.source.end()
     },
+
     // Close for writing
     closeWrite: async () => {
+      log.trace('%s stream %s closeWrite', type, streamName)
+
       if (sinkEnded) {
         return
       }
 
-      await stream.sink([])
+      closeController.abort()
+
+      try {
+        send({ id, type: Types.CLOSE })
+      } catch (err) {
+        log.trace('%s stream %s error sending close', type, name, err)
+      }
+
+      onSinkEnd()
     },
+
     // Close for reading and writing (local error)
-    abort: (err?: Error) => {
+    abort: (err: Error) => {
       log.trace('%s stream %s abort', type, streamName, err)
       // End the source with the passed error
       stream.source.end(err)
       abortController.abort()
       onSinkEnd(err)
     },
+
     // Close immediately for reading and writing (remote error)
     reset: () => {
       const err = errCode(new Error('stream reset'), ERR_MPLEX_STREAM_RESET)
@@ -125,6 +144,7 @@ export function createStream (options: Options): MplexStream {
       stream.source.end(err)
       onSinkEnd(err)
     },
+
     sink: async (source: Source<Uint8Array>) => {
       if (sinkEnded) {
         throw errCode(new Error('stream closed for writing'), ERR_MPLEX_SINK_ENDED)
@@ -132,7 +152,8 @@ export function createStream (options: Options): MplexStream {
 
       source = abortableSource(source, anySignal([
         abortController.signal,
-        resetController.signal
+        resetController.signal,
+        closeController.signal
       ]))
 
       try {
@@ -159,6 +180,10 @@ export function createStream (options: Options): MplexStream {
         }
       } catch (err: any) {
         if (err.type === 'aborted' && err.message === 'The operation was aborted') {
+          if (closeController.signal.aborted) {
+            return
+          }
+
           if (resetController.signal.aborted) {
             err.message = 'stream reset'
             err.code = ERR_MPLEX_STREAM_RESET
@@ -195,10 +220,13 @@ export function createStream (options: Options): MplexStream {
 
       onSinkEnd()
     },
+
     source: pushable<Uint8Array>({
       onEnd: onSourceEnd
     }),
+
     timeline,
+
     id: externalId
   }
 

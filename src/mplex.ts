@@ -201,10 +201,22 @@ export class MplexStreamMuxer implements StreamMuxer {
       const { initiators, receivers } = this._streams
       // Abort all the things!
       for (const s of initiators.values()) {
-        s.abort(err)
+        if (err != null) {
+          s.abort(err)
+        } else {
+          void s.close().catch(err => {
+            log.error(err)
+          })
+        }
       }
       for (const s of receivers.values()) {
-        s.abort(err)
+        if (err != null) {
+          s.abort(err)
+        } else {
+          void s.close().catch(err => {
+            log.error(err)
+          })
+        }
       }
     }
     const source = pushableV<Message>({ onEnd })
@@ -252,7 +264,9 @@ export class MplexStreamMuxer implements StreamMuxer {
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:
         // We should expect no more data from the remote, stop reading
-        stream.closeRead()
+        void stream.closeRead().catch(err => {
+          log.error(err)
+        })
         break
       case MessageTypes.RESET_INITIATOR:
       case MessageTypes.RESET_RECEIVER:
