@@ -16,6 +16,7 @@ const log = logger('libp2p:mplex:stream')
 
 const ERR_MPLEX_STREAM_RESET = 'ERR_MPLEX_STREAM_RESET'
 const ERR_MPLEX_STREAM_ABORT = 'ERR_MPLEX_STREAM_ABORT'
+const ERR_MPLEX_SINK_ENDED = 'ERR_MPLEX_SINK_ENDED'
 
 export interface Options {
   id: number
@@ -86,9 +87,28 @@ export function createStream (options: Options): MplexStream {
   }
 
   const stream = {
+    // Close for both Reading and Writing
+    close: async () => {
+      await Promise.all([
+        stream.closeRead(),
+        stream.closeWrite()
+      ])
+    },
     // Close for reading
-    close: () => {
-      stream.source.end()
+    closeRead: async () => {
+      if (sourceEnded) {
+        return
+      }
+
+      await stream.source.end()
+    },
+    // Close for writing
+    closeWrite: async () => {
+      if (sinkEnded) {
+        return
+      }
+
+      await stream.sink([])
     },
     // Close for reading and writing (local error)
     abort: (err?: Error) => {
@@ -106,6 +126,10 @@ export function createStream (options: Options): MplexStream {
       onSinkEnd(err)
     },
     sink: async (source: Source<Uint8Array>) => {
+      if (sinkEnded) {
+        throw errCode(new Error('stream closed for writing'), ERR_MPLEX_SINK_ENDED)
+      }
+
       source = abortableSource(source, anySignal([
         abortController.signal,
         resetController.signal

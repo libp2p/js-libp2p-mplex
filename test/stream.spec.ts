@@ -94,7 +94,7 @@ async function streamPair (n: number, onInitiatorMessage?: onMessage, onReceiver
 
       // when the initiator sends a CLOSE message, we call close
       if (msg.type === MessageTypes.CLOSE_INITIATOR) {
-        receiver.close()
+        receiver.closeRead()
       }
 
       // when the initiator sends a RESET message, we call close
