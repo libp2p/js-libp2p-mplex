@@ -204,18 +204,14 @@ export class MplexStreamMuxer implements StreamMuxer {
         if (err != null) {
           s.abort(err)
         } else {
-          void s.close().catch(err => {
-            log.error(err)
-          })
+          s.close()
         }
       }
       for (const s of receivers.values()) {
         if (err != null) {
           s.abort(err)
         } else {
-          void s.close().catch(err => {
-            log.error(err)
-          })
+          s.close()
         }
       }
     }
@@ -264,9 +260,7 @@ export class MplexStreamMuxer implements StreamMuxer {
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:
         // We should expect no more data from the remote, stop reading
-        void stream.closeRead().catch(err => {
-          log.error(err)
-        })
+        stream.closeRead()
         break
       case MessageTypes.RESET_INITIATOR:
       case MessageTypes.RESET_RECEIVER:

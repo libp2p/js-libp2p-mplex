@@ -87,30 +87,28 @@ export function createStream (options: Options): MplexStream {
     }
   }
 
-  const stream = {
+  const stream: MplexStream = {
     // Close for both Reading and Writing
-    close: async () => {
+    close: () => {
       log.trace('%s stream %s close', type, streamName)
 
-      await Promise.all([
-        stream.closeRead(),
-        stream.closeWrite()
-      ])
+      stream.closeRead()
+      stream.closeWrite()
     },
 
     // Close for reading
-    closeRead: async () => {
+    closeRead: () => {
       log.trace('%s stream %s closeRead', type, streamName)
 
       if (sourceEnded) {
         return
       }
 
-      await stream.source.end()
+      stream.source.end()
     },
 
     // Close for writing
-    closeWrite: async () => {
+    closeWrite: () => {
       log.trace('%s stream %s closeWrite', type, streamName)
 
       if (sinkEnded) {
