@@ -54,8 +54,8 @@ Creates a factory that can be used to create new muxers.
 
 `options` is an optional `Object` that may have the following properties:
 
-* `maxMsgSize` - a number that defines how large mplex data messages can be in bytes, if messages are larger than this they will be sent as multiple messages (default: 1024 * 1024)
-*
+* `maxMsgSize` - a number that defines how large mplex data messages can be in bytes, if messages are larger than this they will be sent as multiple messages (default: 1 << 20)
+* `maxStreamsPerConnection` - a number that defines how many streams are allowed per connection (default: 1024)
 
 ### `const muxer = factory.createStreamMuxer(components, [options])`
 
