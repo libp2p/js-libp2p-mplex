@@ -4,7 +4,7 @@ import { abortableSource } from 'abortable-iterator'
 import { encode } from './encode.js'
 import { decode } from './decode.js'
 import { restrictSize } from './restrict-size.js'
-import { MessageTypes, MessageTypeNames, Message } from './message-types.js'
+import { MessageTypes, MessageTypeNames, MessageReceiverMessage, Message } from './message-types.js'
 import { createStream } from './stream.js'
 import { toString as uint8ArrayToString } from 'uint8arrays'
 import { trackedMap } from '@libp2p/tracked-map'
@@ -262,7 +262,7 @@ export class MplexStreamMuxer implements StreamMuxer {
       case MessageTypes.MESSAGE_INITIATOR:
       case MessageTypes.MESSAGE_RECEIVER:
         // We got data from the remote, push it into our local stream
-        stream.source.push(message.data.slice())
+        stream.source.push((message as MessageReceiverMessage).data.slice())
         break
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:
