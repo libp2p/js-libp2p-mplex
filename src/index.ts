@@ -2,6 +2,9 @@ import type { Components } from '@libp2p/interfaces/components'
 import type { StreamMuxerFactory, StreamMuxerInit } from '@libp2p/interfaces/stream-muxer'
 import { MplexStreamMuxer } from './mplex.js'
 
+// Export MplexStreamMuxer in case library users wish to use it directly.
+export { MplexStreamMuxer } from './mplex.js';
+
 export interface MplexInit {
   /**
    * The maximum size of message that can be sent in one go in bytes.
