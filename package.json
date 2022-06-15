@@ -157,7 +157,7 @@
     "varint": "^6.0.0"
   },
   "devDependencies": {
-    "@libp2p/interface-stream-muxer-compliance-tests": "^1.0.1",
+    "@libp2p/interface-stream-muxer-compliance-tests": "^1.0.2",
     "@types/varint": "^6.0.0",
     "aegir": "^37.2.0",
     "cborg": "^1.8.1",
