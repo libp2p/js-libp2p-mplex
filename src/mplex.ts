@@ -18,8 +18,8 @@ import type { MplexInit } from './index.js'
 
 const log = logger('libp2p:mplex')
 
-const MAX_STREAMS_INCOMING_STREAMS_PER_CONNECTION = 1024
-const MAX_STREAMS_OUTGOING_STREAMS_PER_CONNECTION = 1024
+const MAX_STREAMS_INBOUND_STREAMS_PER_CONNECTION = 1024
+const MAX_STREAMS_OUTBOUND_STREAMS_PER_CONNECTION = 1024
 const MAX_STREAM_BUFFER_SIZE = 1024 * 1024 * 4 // 4MB
 
 function printMessage (msg: Message) {
@@ -125,12 +125,12 @@ export class MplexStreamMuxer implements StreamMuxer {
   }
 
   _newStream (options: { id: number, name: string, type: 'initiator' | 'receiver', registry: Map<number, MplexStream> }) {
-    if (this._streams.initiators.size === (this._init.maxOutgoingStreamsPerConnection ?? MAX_STREAMS_OUTGOING_STREAMS_PER_CONNECTION)) {
-      throw errCode(new Error('To many outgoing streams open'), 'ERR_TOO_MANY_OUTGOING_STREAMS')
+    if (this._streams.initiators.size === (this._init.maxOutboundStreams ?? MAX_STREAMS_OUTBOUND_STREAMS_PER_CONNECTION)) {
+      throw errCode(new Error('To many outgoing streams open'), 'ERR_TOO_MANY_OUTBOUND_STREAMS')
     }
 
-    if (this._streams.receivers.size === (this._init.maxIncomingStreamsPerConnection ?? MAX_STREAMS_INCOMING_STREAMS_PER_CONNECTION)) {
-      throw errCode(new Error('To many incoming streams open'), 'ERR_TOO_MANY_INCOMING_STREAMS')
+    if (this._streams.receivers.size === (this._init.maxInboundStreams ?? MAX_STREAMS_INBOUND_STREAMS_PER_CONNECTION)) {
+      throw errCode(new Error('To many incoming streams open'), 'ERR_TOO_MANY_INBOUND_STREAMS')
     }
 
     const { id, name, type, registry } = options

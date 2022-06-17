@@ -14,13 +14,13 @@ export interface MplexInit {
    * The maximum number of multiplexed streams that can be open at any
    * one time. An attempt to open more than this will throw.
    */
-  maxIncomingStreamsPerConnection?: number
+  maxInboundStreams?: number
 
   /**
    * The maximum number of multiplexed streams that can be open at any
    * one time. An attempt to open more than this will throw.
    */
-  maxOutgoingStreamsPerConnection?: number
+  maxOutboundStreams?: number
 
   /**
    * Incoming stream messages are buffered until processed by the stream

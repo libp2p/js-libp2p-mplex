@@ -16,31 +16,31 @@ import { pushable } from 'it-pushable'
 
 describe('mplex', () => {
   it('should restrict number of initiator streams per connection', async () => {
-    const maxOutgoingStreamsPerConnection = 10
+    const maxOutboundStreams = 10
     const factory = new Mplex({
-      maxOutgoingStreamsPerConnection
+      maxOutboundStreams
     })
     const muxer = factory.createStreamMuxer()
 
     // max out the streams for this connection
-    for (let i = 0; i < maxOutgoingStreamsPerConnection; i++) {
+    for (let i = 0; i < maxOutboundStreams; i++) {
       muxer.newStream()
     }
 
     // open one more
-    expect(() => muxer.newStream()).to.throw().with.property('code', 'ERR_TOO_MANY_OUTGOING_STREAMS')
+    expect(() => muxer.newStream()).to.throw().with.property('code', 'ERR_TOO_MANY_OUTBOUND_STREAMS')
   })
 
   it('should restrict number of recipient streams per connection', async () => {
-    const maxIncomingStreamsPerConnection = 10
+    const maxInboundStreams = 10
     const factory = new Mplex({
-      maxIncomingStreamsPerConnection
+      maxInboundStreams
     })
     const muxer = factory.createStreamMuxer()
     const stream = pushable()
 
     // max out the streams for this connection
-    for (let i = 0; i < maxIncomingStreamsPerConnection; i++) {
+    for (let i = 0; i < maxInboundStreams; i++) {
       const source: NewStreamMessage[] = [{
         id: i,
         type: 0,
@@ -65,7 +65,7 @@ describe('mplex', () => {
 
     await muxer.sink(stream)
 
-    await expect(all(muxer.source)).to.eventually.be.rejected.with.property('code', 'ERR_TOO_MANY_INCOMING_STREAMS')
+    await expect(all(muxer.source)).to.eventually.be.rejected.with.property('code', 'ERR_TOO_MANY_INBOUND_STREAMS')
   })
 
   it('should reset a stream that fills the message buffer', async () => {
