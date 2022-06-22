@@ -85,9 +85,7 @@ export class MplexStreamMuxer implements StreamMuxer {
     this.source = source
   }
 
-  init (components: Components) {
-
-  }
+  init (components: Components) {}
 
   /**
    * Returns a Map of streams and their ids
@@ -113,6 +111,16 @@ export class MplexStreamMuxer implements StreamMuxer {
     name = name == null ? id.toString() : name.toString()
     const registry = this._streams.initiators
     return this._newStream({ id, name, type: 'initiator', registry })
+  }
+
+  close(err?: Error | undefined) {
+    for (const stream of this.streams) {
+      if (err) {
+        stream.abort(err)
+      } else {
+        stream.close()
+      }
+    }
   }
 
   /**
