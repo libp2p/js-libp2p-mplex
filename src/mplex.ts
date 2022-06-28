@@ -129,7 +129,7 @@ export class MplexStreamMuxer implements StreamMuxer {
   close (err?: Error | undefined): void {
     if (this.closeController.signal.aborted) return
 
-    if (err) {
+    if (err != null) {
       this.streams.forEach(s => s.abort(err))
     } else {
       this.streams.forEach(s => s.close())
@@ -200,8 +200,8 @@ export class MplexStreamMuxer implements StreamMuxer {
   _createSink () {
     const sink: Sink<Uint8Array> = async source => {
       // see: https://github.com/jacobheun/any-signal/pull/18
-      let abortSignals = [this.closeController.signal]
-      if (this._init.signal) {
+      const abortSignals = [this.closeController.signal]
+      if (this._init.signal != null) {
         abortSignals.push(this._init.signal)
       }
       source = abortableSource(source, anySignal(abortSignals))
