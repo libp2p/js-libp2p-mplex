@@ -72,7 +72,7 @@ async function streamPair (n: number, onInitiatorMessage?: onMessage, onReceiver
       onInitiatorMessage(msg, initiator, receiver)
     }
 
-    receiver.source.push(msgToBuffer(msg))
+    receiver.inputSource.push(msgToBuffer(msg))
   }
   const mockReceiverSend = (msg: Message) => {
     receiverMessages.push(msg)
@@ -81,7 +81,7 @@ async function streamPair (n: number, onInitiatorMessage?: onMessage, onReceiver
       onReceiverMessage(msg, initiator, receiver)
     }
 
-    initiator.source.push(msgToBuffer(msg))
+    initiator.inputSource.push(msgToBuffer(msg))
   }
   const initiator = createStream({ id, send: mockInitiatorSend, type: 'initiator' })
   const receiver = createStream({ id, send: mockReceiverSend, type: 'receiver' })
@@ -488,9 +488,9 @@ describe('stream', () => {
     const send = (msg: Message) => {
       if (msg.type === MessageTypes.CLOSE_INITIATOR) {
         // simulate remote closing connection
-        stream.source.end()
+        stream.inputSource.end()
       } else if (msg.type === MessageTypes.MESSAGE_INITIATOR) {
-        stream.source.push(msgToBuffer(msg))
+        stream.inputSource.push(msgToBuffer(msg))
       }
     }
     const id = randomInt(1000)
@@ -533,7 +533,7 @@ describe('stream', () => {
 
     const send = (msg: Message) => {
       if (msg.type === MessageTypes.CLOSE_INITIATOR) {
-        stream.source.end()
+        stream.inputSource.end()
       } else if (msg.type === MessageTypes.MESSAGE_INITIATOR) {
         messages.push(msg)
       }

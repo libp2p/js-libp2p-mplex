@@ -41,7 +41,7 @@ function printMessage (msg: Message) {
 }
 
 export interface MplexStream extends Stream {
-  source: Pushable<Uint8Array>
+  inputSource: Pushable<Uint8Array>
 }
 
 interface MplexStreamMuxerInit extends MplexInit, StreamMuxerInit {}
@@ -280,7 +280,7 @@ export class MplexStreamMuxer implements StreamMuxer {
     switch (type) {
       case MessageTypes.MESSAGE_INITIATOR:
       case MessageTypes.MESSAGE_RECEIVER:
-        if (stream.source.readableLength > maxBufferSize) {
+        if (stream.inputSource.readableLength > maxBufferSize) {
           // Stream buffer has got too large, reset the stream
           this._source.push({
             id: message.id,
@@ -295,7 +295,7 @@ export class MplexStreamMuxer implements StreamMuxer {
         }
 
         // We got data from the remote, push it into our local stream
-        stream.source.push(message.data.slice())
+        stream.inputSource.push(message.data.slice())
         break
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:
