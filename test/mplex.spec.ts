@@ -76,9 +76,8 @@ describe('mplex', () => {
 
     const messages = await all(decode(bufs))
 
-    // should have reset stream that pushed us over the incoming limit
-    expect(messages).to.have.nested.property('[0][0].id', 11)
-    expect(messages).to.have.nested.property('[0][0].type', MessageTypes.RESET_RECEIVER)
+    expect(messages).to.have.nested.property('[0][0].id', 11, 'Did not specify the correct stream id')
+    expect(messages).to.have.nested.property('[0][0].type', MessageTypes.RESET_RECEIVER, 'Did not reset the stream that tipped us over the inbound stream limit')
   })
 
   it('should reset a stream that fills the message buffer', async () => {
