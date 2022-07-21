@@ -37,6 +37,11 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./alloc-unsafe.js": {
+      "types": "./dist/src/alloc-unsafe.d.ts",
+      "browser": "./dist/src/alloc-unsafe-browser.js",
+      "import": "./dist/src/alloc-unsafe.js"
     }
   },
   "eslintConfig": {
