@@ -160,10 +160,6 @@ export class MplexStreamMuxer implements StreamMuxer {
     }
 
     const send = (msg: Message) => {
-      if (!registry.has(id)) {
-        throw errCode(new Error('the stream is not in the muxer registry, it may have already been closed'), 'ERR_STREAM_DOESNT_EXIST')
-      }
-
       if (log.enabled) {
         log.trace('%s stream %s send', type, id, printMessage(msg))
       }
