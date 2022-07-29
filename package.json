@@ -152,7 +152,7 @@
     "it-pipe": "^2.0.3",
     "it-pushable": "^3.0.0",
     "it-stream-types": "^1.0.4",
-    "uint8arraylist": "^1.4.0",
+    "uint8arraylist": "^2.0.0",
     "uint8arrays": "^3.0.0",
     "varint": "^6.0.0"
   },
