@@ -1,5 +1,3 @@
-import type { Uint8ArrayList } from 'uint8arraylist'
-
 type INITIATOR_NAME = 'NEW_STREAM' | 'MESSAGE' | 'CLOSE' | 'RESET'
 type RECEIVER_NAME = 'MESSAGE' | 'CLOSE' | 'RESET'
 type NAME = 'NEW_STREAM' | 'MESSAGE_INITIATOR' | 'CLOSE_INITIATOR' | 'RESET_INITIATOR' | 'MESSAGE_RECEIVER' | 'CLOSE_RECEIVER' | 'RESET_RECEIVER'
@@ -41,19 +39,19 @@ export const ReceiverMessageTypes: Record<RECEIVER_NAME, CODE> = Object.freeze({
 export interface NewStreamMessage {
   id: number
   type: MessageTypes.NEW_STREAM
-  data: Uint8Array | Uint8ArrayList
+  data: Uint8Array
 }
 
 export interface MessageReceiverMessage {
   id: number
   type: MessageTypes.MESSAGE_RECEIVER
-  data: Uint8Array | Uint8ArrayList
+  data: Uint8Array
 }
 
 export interface MessageInitiatorMessage {
   id: number
   type: MessageTypes.MESSAGE_INITIATOR
-  data: Uint8Array | Uint8ArrayList
+  data: Uint8Array
 }
 
 export interface CloseReceiverMessage {

@@ -30,11 +30,11 @@ function printMessage (msg: Message) {
   }
 
   if (msg.type === MessageTypes.NEW_STREAM) {
-    output.data = uint8ArrayToString(msg.data instanceof Uint8Array ? msg.data : msg.data.subarray())
+    output.data = uint8ArrayToString(msg.data)
   }
 
   if (msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) {
-    output.data = uint8ArrayToString(msg.data instanceof Uint8Array ? msg.data : msg.data.subarray(), 'base16')
+    output.data = uint8ArrayToString(msg.data, 'base16')
   }
 
   return output
@@ -164,10 +164,6 @@ export class MplexStreamMuxer implements StreamMuxer {
         log.trace('%s stream %s send', type, id, printMessage(msg))
       }
 
-      if (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) {
-        msg.data = msg.data instanceof Uint8Array ? msg.data : msg.data.subarray()
-      }
-
       this._source.push(msg)
     }
 
@@ -263,7 +259,7 @@ export class MplexStreamMuxer implements StreamMuxer {
         return
       }
 
-      const stream = this._newReceiverStream({ id, name: uint8ArrayToString(message.data instanceof Uint8Array ? message.data : message.data.subarray()) })
+      const stream = this._newReceiverStream({ id, name: uint8ArrayToString(message.data) })
 
       if (this._init.onIncomingStream != null) {
         this._init.onIncomingStream(stream)
@@ -301,7 +297,7 @@ export class MplexStreamMuxer implements StreamMuxer {
         }
 
         // We got data from the remote, push it into our local stream
-        stream.source.push(message.data.subarray())
+        stream.source.push(message.data)
         break
       case MessageTypes.CLOSE_INITIATOR:
       case MessageTypes.CLOSE_RECEIVER:

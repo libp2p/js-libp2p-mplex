@@ -49,7 +49,7 @@ describe('coder', () => {
       data: new Uint8ArrayList(
         uint8ArrayFromString(Math.random().toString()),
         uint8ArrayFromString(Math.random().toString())
-      )
+      ).subarray()
     }]
 
     const data = uint8ArrayConcat(await all(encode(source)))
@@ -58,7 +58,7 @@ describe('coder', () => {
       uint8ArrayConcat([
         uint8ArrayFromString('8801', 'base16'),
         Uint8Array.from([source[0].data.length]),
-        source[0].data instanceof Uint8Array ? source[0].data : source[0].data.slice()
+        source[0].data
       ])
     )
   })
