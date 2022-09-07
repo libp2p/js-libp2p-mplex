@@ -8,7 +8,7 @@ describe('compliance', () => {
     async setup () {
       return new Mplex({
         maxInboundStreams: Infinity,
-        maxNewInboundStreamsPerSecond: Infinity
+        disconnectThreshold: Infinity
       })
     },
     async teardown () {}

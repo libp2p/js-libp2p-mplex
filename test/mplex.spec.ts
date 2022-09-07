@@ -36,7 +36,7 @@ describe('mplex', () => {
     const maxInboundStreams = 10
     const factory = new Mplex({
       maxInboundStreams,
-      maxNewInboundStreamsPerSecond: Infinity
+      disconnectThreshold: Infinity
     })
     const muxer = factory.createStreamMuxer()
     const stream = pushable()
