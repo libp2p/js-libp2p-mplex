@@ -24,7 +24,7 @@ const log = logger('libp2p:mplex')
 const MAX_STREAMS_INBOUND_STREAMS_PER_CONNECTION = 1024
 const MAX_STREAMS_OUTBOUND_STREAMS_PER_CONNECTION = 1024
 const MAX_STREAM_BUFFER_SIZE = 1024 * 1024 * 4 // 4MB
-const MAX_NEW_INBOUND_STREAMS_PER_SECOND = 10
+const DISCONNECT_THRESHOLD = 5
 
 function printMessage (msg: Message) {
   const output: any = {
@@ -96,7 +96,7 @@ export class MplexStreamMuxer implements StreamMuxer {
     this.closeController = new AbortController()
 
     this.rateLimiter = new RateLimiterMemory({
-      points: init.maxNewInboundStreamsPerSecond ?? MAX_NEW_INBOUND_STREAMS_PER_SECOND,
+      points: init.disconnectThreshold ?? DISCONNECT_THRESHOLD,
       duration: 1
     })
   }

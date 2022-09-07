@@ -32,11 +32,11 @@ export interface MplexInit {
   maxStreamBufferSize?: number
 
   /**
-   * When `maxInboundStreams` is hit, if the remote tries to open more than
-   * this many new multiplexed streams per second the connection will be
-   * closed (default: 10)
+   * When `maxInboundStreams` is hit, if the remote continues try to open
+   * more than this many new multiplexed streams per second the connection
+   * will be closed (default: 5)
    */
-  maxNewInboundStreamsPerSecond?: number
+  disconnectThreshold?: number
 }
 
 export class Mplex implements StreamMuxerFactory, Initializable {
