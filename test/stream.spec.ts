@@ -15,6 +15,7 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays'
 import { messageWithBytes } from './fixtures/utils.js'
 import type { Message } from '../src/message-types.js'
 import type { MplexStream } from '../src/mplex.js'
+import { Uint8ArrayList } from 'uint8arraylist'
 
 function randomInput (min = 1, max = 100) {
   return Array.from(Array(randomInt(min, max)), () => randomBytes(randomInt(1, 128)))
@@ -553,5 +554,36 @@ describe('stream', () => {
     expect(messages.length).to.equal(2)
     expect(messages[0]).to.have.nested.property('data.length', maxMsgSize)
     expect(messages[1]).to.have.nested.property('data.length', maxMsgSize)
+  })
+
+  it('should chunk really big messages', async () => {
+    const msgs: Message[] = []
+    const mockSend = (msg: Message) => msgs.push(msg)
+    const id = randomInt(1000)
+    const name = `STREAM${Date.now()}`
+    const maxMsgSize = 10
+    const stream = createStream({ id, name, send: mockSend, maxMsgSize })
+    const input = [
+      new Uint8Array(1024).map(() => randomInt(0, 255))
+    ]
+    const output = new Uint8ArrayList()
+
+    await pipe(input, stream)
+
+    expect(msgs).to.have.lengthOf(105)
+    expect(msgs[0].id).to.equal(id)
+    expectMsgType(msgs[0].type, MessageTypes.NEW_STREAM)
+
+    for (let i = 1; i < msgs.length - 1; i++) {
+      const msg = msgs[i]
+      expectMsgType(msg.type, MessageTypes.MESSAGE_INITIATOR)
+
+      if (msg.type === MessageTypes.MESSAGE_INITIATOR) {
+        output.append(msg.data)
+      }
+    }
+
+    expectMsgType(msgs[msgs.length - 1].type, MessageTypes.CLOSE_INITIATOR)
+    expect(output.slice()).to.equalBytes(input[0])
   })
 })
