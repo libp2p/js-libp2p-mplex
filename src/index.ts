@@ -38,28 +38,22 @@ export interface MplexInit {
   disconnectThreshold?: number
 }
 
-export interface MplexComponents {
-
-}
-
 class Mplex implements StreamMuxerFactory {
   public protocol = '/mplex/6.7.0'
   private readonly _init: MplexInit
-  private readonly _components: MplexComponents
 
-  constructor (components: MplexComponents, init: MplexInit = {}) {
-    this._components = components
+  constructor (init: MplexInit = {}) {
     this._init = init
   }
 
   createStreamMuxer (init: StreamMuxerInit = {}): StreamMuxer {
-    return new MplexStreamMuxer(this._components, {
+    return new MplexStreamMuxer({
       ...init,
       ...this._init
     })
   }
 }
 
-export function mplex (init: MplexInit = {}): (components?: MplexComponents) => StreamMuxerFactory {
-  return (components: MplexComponents = {}) => new Mplex(components, init)
+export function mplex (init: MplexInit = {}): () => StreamMuxerFactory {
+  return () => new Mplex(init)
 }
