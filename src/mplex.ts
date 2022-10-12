@@ -10,11 +10,10 @@ import { toString as uint8ArrayToString } from 'uint8arrays'
 import { logger } from '@libp2p/logger'
 import errCode from 'err-code'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
-import type { Components } from '@libp2p/components'
 import type { Sink } from 'it-stream-types'
 import type { StreamMuxer, StreamMuxerInit } from '@libp2p/interface-stream-muxer'
 import type { Stream } from '@libp2p/interface-connection'
-import type { MplexInit } from './index.js'
+import type { MplexComponents, MplexInit } from './index.js'
 import anySignal from 'any-signal'
 import type { Uint8ArrayList } from 'uint8arraylist'
 
@@ -62,7 +61,7 @@ export class MplexStreamMuxer implements StreamMuxer {
   private readonly closeController: AbortController
   private readonly rateLimiter: RateLimiterMemory
 
-  constructor (components: Components, init?: MplexStreamMuxerInit) {
+  constructor (components: MplexComponents, init?: MplexStreamMuxerInit) {
     init = init ?? {}
 
     this._streamId = 0
@@ -100,8 +99,6 @@ export class MplexStreamMuxer implements StreamMuxer {
       duration: 1
     })
   }
-
-  init (components: Components) {}
 
   /**
    * Returns a Map of streams and their ids
