@@ -10,7 +10,7 @@ interface MessageHeader {
   length: number
 }
 
-class Decoder {
+export class Decoder {
   private readonly _buffer: Uint8ArrayList
   private _headerInfo: MessageHeader | null
 

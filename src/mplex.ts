@@ -1,11 +1,9 @@
-import { pipe } from 'it-pipe'
 import { pushableV } from 'it-pushable'
 import { abortableSource } from 'abortable-iterator'
 import { encode } from './encode.js'
-import { decode } from './decode.js'
-import { restrictSize } from './restrict-size.js'
+import { Decoder } from './decode.js'
 import { MessageTypes, MessageTypeNames, Message } from './message-types.js'
-import { createStream } from './stream.js'
+import { createStream, MAX_MSG_SIZE } from './stream.js'
 import { toString as uint8ArrayToString } from 'uint8arrays'
 import { logger } from '@libp2p/logger'
 import errCode from 'err-code'
@@ -202,16 +200,29 @@ export class MplexStreamMuxer implements StreamMuxer {
       source = abortableSource(source, anySignal(abortSignals))
 
       try {
-        await pipe(
-          source,
-          decode,
-          restrictSize(this._init.maxMsgSize),
-          async source => {
-            for await (const msg of source) {
-              await this._handleIncoming(msg)
-            }
+        const decoder = new Decoder()
+        const maxSize = this._init.maxMsgSize ?? MAX_MSG_SIZE
+
+        for await (const chunk of source) {
+          // decode
+          const msgs = decoder.write(chunk)
+          if (msgs.length === 0) {
+            // eslint-disable-next-line no-continue
+            continue
           }
-        )
+
+          // restrict size
+          for (const msg of msgs) {
+            if (
+              (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) &&
+              msg.data.byteLength > maxSize
+            ) {
+              throw Object.assign(new Error('message size too large!'), { code: 'ERR_MSG_TOO_BIG' })
+            }
+
+            await this._handleIncoming(msg)
+          }
+        }
 
         this._source.end()
       } catch (err: any) {

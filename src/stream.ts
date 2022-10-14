@@ -1,7 +1,6 @@
 import { abortableSource } from 'abortable-iterator'
 import { pushable } from 'it-pushable'
 import errCode from 'err-code'
-import { MAX_MSG_SIZE } from './restrict-size.js'
 import { anySignal } from 'any-signal'
 import { InitiatorMessageTypes, ReceiverMessageTypes } from './message-types.js'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
@@ -14,6 +13,7 @@ import type { MplexStream } from './mplex.js'
 
 const log = logger('libp2p:mplex:stream')
 
+export const MAX_MSG_SIZE = 1 << 20 // 1MB
 const ERR_STREAM_RESET = 'ERR_STREAM_RESET'
 const ERR_STREAM_ABORT = 'ERR_STREAM_ABORT'
 const ERR_SINK_ENDED = 'ERR_SINK_ENDED'
