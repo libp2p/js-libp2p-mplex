@@ -3,6 +3,8 @@ import { Uint8ArrayList } from 'uint8arraylist'
 import type { Source } from 'it-stream-types'
 import type { Message } from './message-types.js'
 
+export const MAX_MSG_SIZE = 1 << 20 // 1MB
+
 interface MessageHeader {
   id: number
   type: keyof typeof MessageTypeNames
