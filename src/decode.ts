@@ -15,10 +15,12 @@ interface MessageHeader {
 class Decoder {
   private readonly _buffer: Uint8ArrayList
   private _headerInfo: MessageHeader | null
+  private readonly _maxMessageSize: number
 
-  constructor () {
+  constructor (maxMessageSize: number = MAX_MSG_SIZE) {
     this._buffer = new Uint8ArrayList()
     this._headerInfo = null
+    this._maxMessageSize = maxMessageSize
   }
 
   write (chunk: Uint8Array) {
@@ -27,6 +29,11 @@ class Decoder {
     }
 
     this._buffer.append(chunk)
+
+    if (this._buffer.byteLength > this._maxMessageSize) {
+      throw Object.assign(new Error('message size too large!'), { code: 'ERR_MSG_TOO_BIG' })
+    }
+
     const msgs: Message[] = []
 
     while (this._buffer.length !== 0) {
@@ -121,14 +128,16 @@ function readVarInt (buf: Uint8ArrayList, offset: number = 0) {
 /**
  * Decode a chunk and yield an _array_ of decoded messages
  */
-export async function * decode (source: Source<Uint8Array>) {
-  const decoder = new Decoder()
+export function decode (maxMessageSize: number = MAX_MSG_SIZE) {
+  return async function * decodeMessages (source: Source<Uint8Array>): Source<Message> {
+    const decoder = new Decoder(maxMessageSize)
 
-  for await (const chunk of source) {
-    const msgs = decoder.write(chunk)
+    for await (const chunk of source) {
+      const msgs = decoder.write(chunk)
 
-    if (msgs.length > 0) {
-      yield msgs
+      if (msgs.length > 0) {
+        yield * msgs
+      }
     }
   }
 }
