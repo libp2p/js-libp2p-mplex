@@ -4,6 +4,7 @@ import type { Source } from 'it-stream-types'
 import type { Message } from './message-types.js'
 
 export const MAX_MSG_SIZE = 1 << 20 // 1MB
+export const MAX_MSG_QUEUE_SIZE = 4 << 20 // 4MB
 
 interface MessageHeader {
   id: number
@@ -16,11 +17,13 @@ class Decoder {
   private readonly _buffer: Uint8ArrayList
   private _headerInfo: MessageHeader | null
   private readonly _maxMessageSize: number
+  private readonly _maxMessageQueueSize: number
 
-  constructor (maxMessageSize: number = MAX_MSG_SIZE) {
+  constructor (maxMessageSize: number = MAX_MSG_SIZE, maxMessageQueueSize: number = MAX_MSG_QUEUE_SIZE) {
     this._buffer = new Uint8ArrayList()
     this._headerInfo = null
     this._maxMessageSize = maxMessageSize
+    this._maxMessageQueueSize = maxMessageQueueSize
   }
 
   write (chunk: Uint8Array) {
@@ -30,8 +33,8 @@ class Decoder {
 
     this._buffer.append(chunk)
 
-    if (this._buffer.byteLength > this._maxMessageSize) {
-      throw Object.assign(new Error('message size too large!'), { code: 'ERR_MSG_TOO_BIG' })
+    if (this._buffer.byteLength > this._maxMessageQueueSize) {
+      throw Object.assign(new Error('message queue size too large!'), { code: 'ERR_MSG_QUEUE_TOO_BIG' })
     }
 
     const msgs: Message[] = []
@@ -40,7 +43,11 @@ class Decoder {
       if (this._headerInfo == null) {
         try {
           this._headerInfo = this._decodeHeader(this._buffer)
-        } catch (_) {
+        } catch (err: any) {
+          if (err.code === 'ERR_MSG_TOO_BIG') {
+            throw err
+          }
+
           break // We haven't received enough data yet
         }
       }
@@ -88,6 +95,11 @@ class Decoder {
     // @ts-expect-error h is a number not a CODE
     if (MessageTypeNames[type] == null) {
       throw new Error(`Invalid type received: ${type}`)
+    }
+
+    // test message type varint + data length
+    if (length > this._maxMessageSize) {
+      throw Object.assign(new Error('message size too large!'), { code: 'ERR_MSG_TOO_BIG' })
     }
 
     // @ts-expect-error h is a number not a CODE
