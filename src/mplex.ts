@@ -3,7 +3,7 @@ import { abortableSource } from 'abortable-iterator'
 import { encode } from './encode.js'
 import { Decoder } from './decode.js'
 import { MessageTypes, MessageTypeNames, Message } from './message-types.js'
-import { createStream, MAX_MSG_SIZE } from './stream.js'
+import { createStream } from './stream.js'
 import { toString as uint8ArrayToString } from 'uint8arrays'
 import { logger } from '@libp2p/logger'
 import errCode from 'err-code'
@@ -154,7 +154,7 @@ export class MplexStreamMuxer implements StreamMuxer {
   _newStream (options: { id: number, name: string, type: 'initiator' | 'receiver', registry: Map<number, MplexStream> }) {
     const { id, name, type, registry } = options
 
-    log('new %s stream %s %s', type, id)
+    log('new %s stream %s', type, id)
 
     if (type === 'initiator' && this._streams.initiators.size === (this._init.maxOutboundStreams ?? MAX_STREAMS_OUTBOUND_STREAMS_PER_CONNECTION)) {
       throw errCode(new Error('Too many outbound streams open'), 'ERR_TOO_MANY_OUTBOUND_STREAMS')
@@ -200,26 +200,10 @@ export class MplexStreamMuxer implements StreamMuxer {
       source = abortableSource(source, anySignal(abortSignals))
 
       try {
-        const decoder = new Decoder()
-        const maxSize = this._init.maxMsgSize ?? MAX_MSG_SIZE
+        const decoder = new Decoder(this._init.maxMsgSize, this._init.maxUnprocessedMessageQueueSize)
 
         for await (const chunk of source) {
-          // decode
-          const msgs = decoder.write(chunk)
-          if (msgs.length === 0) {
-            // eslint-disable-next-line no-continue
-            continue
-          }
-
-          // restrict size
-          for (const msg of msgs) {
-            if (
-              (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) &&
-              msg.data.byteLength > maxSize
-            ) {
-              throw Object.assign(new Error('message size too large!'), { code: 'ERR_MSG_TOO_BIG' })
-            }
-
+          for (const msg of decoder.write(chunk)) {
             await this._handleIncoming(msg)
           }
         }

@@ -1,3 +1,46 @@
+## [7.0.5](https://github.com/libp2p/js-libp2p-mplex/compare/v7.0.4...v7.0.5) (2022-11-24)
+
+
+### Bug Fixes
+
+* apply message size limit before decoding message ([#231](https://github.com/libp2p/js-libp2p-mplex/issues/231)) ([279ad47](https://github.com/libp2p/js-libp2p-mplex/commit/279ad47517ae3d4bc99ab499bf1fd9ef67dbb74b))
+* limit unprocessed message queue size separately to message size ([#234](https://github.com/libp2p/js-libp2p-mplex/issues/234)) ([2297856](https://github.com/libp2p/js-libp2p-mplex/commit/2297856c3ffb05f9cabf52efc3b78ef96d3faf1e))
+* yield single buffers ([#233](https://github.com/libp2p/js-libp2p-mplex/issues/233)) ([31d3938](https://github.com/libp2p/js-libp2p-mplex/commit/31d3938f8fcdf56debbf8824ccbcbc057d5bd5be))
+
+## [7.0.4](https://github.com/libp2p/js-libp2p-mplex/compare/v7.0.3...v7.0.4) (2022-11-23)
+
+
+### Dependencies
+
+* **dev:** bump it-map from 1.0.6 to 2.0.0 ([#225](https://github.com/libp2p/js-libp2p-mplex/issues/225)) ([a153108](https://github.com/libp2p/js-libp2p-mplex/commit/a15310817a325b5106112562d82739d86fa50a49))
+
+
+### Trivial Changes
+
+* update benchmark ([#232](https://github.com/libp2p/js-libp2p-mplex/issues/232)) ([d73381e](https://github.com/libp2p/js-libp2p-mplex/commit/d73381e00b5109505a15b10512e52d17b4b78dd6))
+
+## [7.0.3](https://github.com/libp2p/js-libp2p-mplex/compare/v7.0.2...v7.0.3) (2022-11-23)
+
+
+### Dependencies
+
+* **dev:** bump it-all from 1.0.6 to 2.0.0 ([#227](https://github.com/libp2p/js-libp2p-mplex/issues/227)) ([345b37d](https://github.com/libp2p/js-libp2p-mplex/commit/345b37d3668298ca7d55fbc7e7e12091add1a219))
+* **dev:** bump it-foreach from 0.1.1 to 1.0.0 ([#226](https://github.com/libp2p/js-libp2p-mplex/issues/226)) ([01bae35](https://github.com/libp2p/js-libp2p-mplex/commit/01bae35a5c41346a945990be2618385bbea79572))
+
+## [7.0.2](https://github.com/libp2p/js-libp2p-mplex/compare/v7.0.1...v7.0.2) (2022-11-23)
+
+
+### Dependencies
+
+* **dev:** bump it-drain from 1.0.5 to 2.0.0 ([#228](https://github.com/libp2p/js-libp2p-mplex/issues/228)) ([263251f](https://github.com/libp2p/js-libp2p-mplex/commit/263251fe3a4b8f55f6b4f431bdbfdb5b1006b42a))
+
+## [7.0.1](https://github.com/libp2p/js-libp2p-mplex/compare/v7.0.0...v7.0.1) (2022-11-21)
+
+
+### Bug Fixes
+
+* type errors ([#230](https://github.com/libp2p/js-libp2p-mplex/issues/230)) ([e9c390a](https://github.com/libp2p/js-libp2p-mplex/commit/e9c390a195c46718e31e1f3bd233b0ab7c1f76b0))
+
 ## [7.0.0](https://github.com/libp2p/js-libp2p-mplex/compare/v6.0.2...v7.0.0) (2022-10-12)
 
 
