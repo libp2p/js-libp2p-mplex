@@ -3,6 +3,7 @@ import varint from 'varint'
 import { Uint8ArrayList } from 'uint8arraylist'
 import { allocUnsafe } from './alloc-unsafe.js'
 import { Message, MessageTypes } from './message-types.js'
+import batchedBytes from 'it-batched-bytes'
 
 const POOL_SIZE = 10 * 1024
 
@@ -55,18 +56,29 @@ const encoder = new Encoder()
 /**
  * Encode and yield one or more messages
  */
-export async function * encode (source: Source<Message | Message[]>) {
-  for await (const msg of source) {
-    const list = new Uint8ArrayList()
+export async function * encode (source: Source<Message[]>, minSendBytes: number = 0) {
+  if (minSendBytes == null || minSendBytes === 0) {
+    // just send the messages
+    for await (const messages of source) {
+      const list = new Uint8ArrayList()
 
-    if (Array.isArray(msg)) {
-      for (const m of msg) {
-        encoder.write(m, list)
+      for (const msg of messages) {
+        encoder.write(msg, list)
       }
-    } else {
-      encoder.write(msg, list)
+
+      yield list.subarray()
     }
 
-    yield list.subarray()
+    return
   }
+
+  // batch messages up for sending
+  yield * batchedBytes(source, {
+    size: minSendBytes,
+    serialize: (obj, list) => {
+      for (const m of obj) {
+        encoder.write(m, list)
+      }
+    }
+  })
 }
