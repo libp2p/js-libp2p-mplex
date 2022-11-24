@@ -17,7 +17,7 @@ export interface MplexInit {
    * than this value an error will be thrown and the connection closed.
    * (default: 4MB)
    */
-  maxMessageQueueSize?: number
+  maxUnprocessedMessageQueueSize?: number
 
   /**
    * The maximum number of multiplexed streams that can be open at any

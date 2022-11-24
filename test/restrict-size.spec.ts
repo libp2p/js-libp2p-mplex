@@ -10,6 +10,7 @@ import { Message, MessageTypes } from '../src/message-types.js'
 import { encode } from '../src/encode.js'
 import { decode } from '../src/decode.js'
 import { Uint8ArrayList } from 'uint8arraylist'
+import toBuffer from 'it-to-buffer'
 
 describe('restrict size', () => {
   it('should throw when size is too big', async () => {
@@ -59,5 +60,66 @@ describe('restrict size', () => {
       async (source) => await all(source)
     )
     expect(output).to.deep.equal(input)
+  })
+
+  it('should throw when unprocessed message queue size is too big', async () => {
+    const maxMessageSize = 32
+    const maxUnprocessedMessageQueueSize = 64
+
+    const input: Message[] = [
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
+      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) }
+    ]
+
+    const output: Message[] = []
+
+    try {
+      await pipe(
+        input,
+        encode,
+        async function * (source) {
+          // make one big buffer
+          yield toBuffer(source)
+        },
+        decode(maxMessageSize, maxUnprocessedMessageQueueSize),
+        (source) => each(source, chunk => {
+          output.push(chunk)
+        }),
+        async (source) => await drain(source)
+      )
+    } catch (err: any) {
+      expect(err).to.have.property('code', 'ERR_MSG_QUEUE_TOO_BIG')
+      expect(output).to.have.length(0)
+      return
+    }
+    throw new Error('did not restrict size')
+  })
+
+  it('should throw when unprocessed message queue size is too big because of garbage', async () => {
+    const maxMessageSize = 32
+    const maxUnprocessedMessageQueueSize = 64
+    const input = randomBytes(maxUnprocessedMessageQueueSize + 1)
+    const output: Message[] = []
+
+    try {
+      await pipe(
+        [input],
+        decode(maxMessageSize, maxUnprocessedMessageQueueSize),
+        (source) => each(source, chunk => {
+          output.push(chunk)
+        }),
+        async (source) => await drain(source)
+      )
+    } catch (err: any) {
+      expect(err).to.have.property('code', 'ERR_MSG_QUEUE_TOO_BIG')
+      expect(output).to.have.length(0)
+      return
+    }
+    throw new Error('did not restrict size')
   })
 })

@@ -17,13 +17,13 @@ class Decoder {
   private readonly _buffer: Uint8ArrayList
   private _headerInfo: MessageHeader | null
   private readonly _maxMessageSize: number
-  private readonly _maxMessageQueueSize: number
+  private readonly _maxUnprocessedMessageQueueSize: number
 
-  constructor (maxMessageSize: number = MAX_MSG_SIZE, maxMessageQueueSize: number = MAX_MSG_QUEUE_SIZE) {
+  constructor (maxMessageSize: number = MAX_MSG_SIZE, maxUnprocessedMessageQueueSize: number = MAX_MSG_QUEUE_SIZE) {
     this._buffer = new Uint8ArrayList()
     this._headerInfo = null
     this._maxMessageSize = maxMessageSize
-    this._maxMessageQueueSize = maxMessageQueueSize
+    this._maxUnprocessedMessageQueueSize = maxUnprocessedMessageQueueSize
   }
 
   write (chunk: Uint8Array) {
@@ -33,8 +33,8 @@ class Decoder {
 
     this._buffer.append(chunk)
 
-    if (this._buffer.byteLength > this._maxMessageQueueSize) {
-      throw Object.assign(new Error('message queue size too large!'), { code: 'ERR_MSG_QUEUE_TOO_BIG' })
+    if (this._buffer.byteLength > this._maxUnprocessedMessageQueueSize) {
+      throw Object.assign(new Error('unprocessed message queue size too large!'), { code: 'ERR_MSG_QUEUE_TOO_BIG' })
     }
 
     const msgs: Message[] = []
@@ -140,9 +140,9 @@ function readVarInt (buf: Uint8ArrayList, offset: number = 0) {
 /**
  * Decode a chunk and yield an _array_ of decoded messages
  */
-export function decode (maxMessageSize: number = MAX_MSG_SIZE) {
+export function decode (maxMessageSize: number = MAX_MSG_SIZE, maxUnprocessedMessageQueueSize: number = MAX_MSG_QUEUE_SIZE) {
   return async function * decodeMessages (source: Source<Uint8Array>): Source<Message> {
-    const decoder = new Decoder(maxMessageSize)
+    const decoder = new Decoder(maxMessageSize, maxUnprocessedMessageQueueSize)
 
     for await (const chunk of source) {
       const msgs = decoder.write(chunk)
