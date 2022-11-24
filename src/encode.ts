@@ -16,7 +16,7 @@ class Encoder {
   }
 
   /**
-   * Encodes the given message and returns it and its header
+   * Encodes the given message and adds it to the passed list
    */
   write (msg: Message, list: Uint8ArrayList): void {
     const pool = this._pool
