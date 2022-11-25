@@ -8,7 +8,7 @@ import drain from 'it-drain'
 import each from 'it-foreach'
 import { Message, MessageTypes } from '../src/message-types.js'
 import { encode } from '../src/encode.js'
-import { decode } from '../src/decode.js'
+import { decode } from './fixtures/decode.js'
 import { Uint8ArrayList } from 'uint8arraylist'
 import toBuffer from 'it-to-buffer'
 
@@ -16,12 +16,12 @@ describe('restrict size', () => {
   it('should throw when size is too big', async () => {
     const maxSize = 32
 
-    const input: Message[][] = [[
-      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(8)) },
-      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) },
-      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(maxSize)) },
-      { id: 0, type: 1, data: new Uint8ArrayList(randomBytes(64)) }
-    ]]
+    const input: Message[][] = [
+      [{ id: 0, type: 1, data: new Uint8ArrayList(randomBytes(8)) }],
+      [{ id: 0, type: 1, data: new Uint8ArrayList(randomBytes(16)) }],
+      [{ id: 0, type: 1, data: new Uint8ArrayList(randomBytes(maxSize)) }],
+      [{ id: 0, type: 1, data: new Uint8ArrayList(randomBytes(64)) }]
+    ]
 
     const output: Message[] = []
 
@@ -37,6 +37,10 @@ describe('restrict size', () => {
       )
     } catch (err: any) {
       expect(err).to.have.property('code', 'ERR_MSG_TOO_BIG')
+      expect(output).to.have.length(3)
+      expect(output[0]).to.deep.equal(input[0][0])
+      expect(output[1]).to.deep.equal(input[1][0])
+      expect(output[2]).to.deep.equal(input[2][0])
       return
     }
     throw new Error('did not restrict size')

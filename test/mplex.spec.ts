@@ -11,7 +11,7 @@ import all from 'it-all'
 import type { Source } from 'it-stream-types'
 import delay from 'delay'
 import pDefer from 'p-defer'
-import { decode } from '../src/decode.js'
+import { decode } from './fixtures/decode.js'
 import { pushable } from 'it-pushable'
 import { Uint8ArrayList } from 'uint8arraylist'
 

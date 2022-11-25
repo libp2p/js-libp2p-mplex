@@ -1,6 +1,6 @@
 {
   "name": "@libp2p/mplex",
-  "version": "7.0.5",
+  "version": "7.0.6",
   "description": "JavaScript implementation of https://github.com/libp2p/mplex",
   "license": "Apache-2.0 OR MIT",
   "homepage": "https://github.com/libp2p/js-libp2p-mplex#readme",
@@ -154,7 +154,6 @@
     "benchmark": "^2.1.4",
     "err-code": "^3.0.1",
     "it-batched-bytes": "^1.0.0",
-    "it-pipe": "^2.0.3",
     "it-pushable": "^3.1.0",
     "it-stream-types": "^1.0.4",
     "rate-limiter-flexible": "^2.3.9",
@@ -173,6 +172,7 @@
     "it-drain": "^2.0.0",
     "it-foreach": "^1.0.0",
     "it-map": "^2.0.0",
+    "it-pipe": "^2.0.3",
     "it-to-buffer": "^3.0.0",
     "p-defer": "^4.0.0",
     "random-int": "^3.0.0",
