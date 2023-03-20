@@ -29,7 +29,7 @@ describe('mplex', () => {
     }
 
     // open one more
-    expect(() => muxer.newStream()).to.throw().with.property('code', 'ERR_TOO_MANY_OUTBOUND_STREAMS')
+    expect(async () => await muxer.newStream()).to.throw().with.property('code', 'ERR_TOO_MANY_OUTBOUND_STREAMS')
   })
 
   it('should restrict number of recipient streams per connection', async () => {
