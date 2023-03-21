@@ -10,7 +10,7 @@ export function messageWithBytes (msg: Message): Message | MessageWithBytes {
   if (msg.type === MessageTypes.NEW_STREAM || msg.type === MessageTypes.MESSAGE_INITIATOR || msg.type === MessageTypes.MESSAGE_RECEIVER) {
     return {
       ...msg,
-      data: msg.data.slice() // convert Uint8ArrayList to Unint8Array
+      data: msg.data.slice() // convert Uint8ArrayList to Uint8Array
     }
   }
 
