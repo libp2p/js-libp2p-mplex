@@ -177,8 +177,7 @@
     "it-pipe": "^2.0.3",
     "it-to-buffer": "^3.0.0",
     "p-defer": "^4.0.0",
-    "random-int": "^3.0.0",
-    "typescript": "4.9.5"
+    "random-int": "^3.0.0"
   },
   "browser": {
     "./dist/src/alloc-unsafe.js": "./dist/src/alloc-unsafe-browser.js"
