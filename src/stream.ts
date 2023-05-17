@@ -1,9 +1,9 @@
+import { AbstractStream, type AbstractStreamInit } from '@libp2p/interface-stream-muxer/stream'
+import { Uint8ArrayList } from 'uint8arraylist'
+import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { MAX_MSG_SIZE } from './decode.js'
 import { InitiatorMessageTypes, ReceiverMessageTypes } from './message-types.js'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { Uint8ArrayList } from 'uint8arraylist'
 import type { Message } from './message-types.js'
-import { AbstractStream, AbstractStreamInit } from '@libp2p/interface-stream-muxer/stream'
 
 export interface Options {
   id: number
@@ -21,10 +21,10 @@ interface MplexStreamInit extends AbstractStreamInit {
 }
 
 class MplexStream extends AbstractStream {
-  private name: string
-  private streamId: number
-  private send: (msg: Message) => void
-  private types: Record<string, number>
+  private readonly name: string
+  private readonly streamId: number
+  private readonly send: (msg: Message) => void
+  private readonly types: Record<string, number>
 
   constructor (init: MplexStreamInit) {
     super(init)
@@ -35,7 +35,7 @@ class MplexStream extends AbstractStream {
     this.streamId = init.streamId
   }
 
-  sendNewStream () {
+  sendNewStream (): void {
     this.send({ id: this.streamId, type: InitiatorMessageTypes.NEW_STREAM, data: new Uint8ArrayList(uint8ArrayFromString(this.name)) })
   }
 
@@ -51,7 +51,7 @@ class MplexStream extends AbstractStream {
     this.send({ id: this.streamId, type: this.types.CLOSE })
   }
 
-  sendCloseRead(): void {
+  sendCloseRead (): void {
     // mplex does not support close read, only close write
   }
 }
